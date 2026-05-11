@@ -1,262 +1,230 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Heart, Activity, ClipboardCheck, Send, RotateCcw, Copy, AlertCircle } from 'lucide-react';
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>24H 성심 PE 시스템</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body { -webkit-tap-highlight-color: transparent; font-family: 'Inter', -apple-system, sans-serif; }
+        .card { background: white; border-radius: 1.5rem; padding: 1.5rem; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05); border: 1px solid #f1f5f9; }
+        input[type="radio"]:checked + span { background-color: #2563eb; color: white; border-color: #2563eb; }
+        .active-btn:active { transform: scale(0.96); }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900 pb-32">
 
-// --- CONFIGURATION ---
-// Cloudflare Worker 배포 후 생성된 URL을 여기에 입력하세요.
-const CLOUDFLARE_WORKER_URL = "https://pesungsim.sungsimamc.workers.dev/"; 
-
-const App = () => {
-  const [ptInfo, setPtInfo] = useState({ name: '', breed: '' });
-  const [vitals, setVitals] = useState({ bw: '', bt: '', hr: '', rr: '', mmccrt: '', bcs: '', mcs: 'Normal' });
-  const [systems, setSystems] = useState([
-    { id: 'eent', label: 'EENT', desc: 'Eyes, Ears, Nose, Throat', status: 'N', note: '' },
-    { id: 'ln', label: 'Lymph Nodes', desc: 'Submandibular, Popliteal, etc.', status: 'N', note: '' },
-    { id: 'cv', label: 'Cardiovascular', desc: 'Heart Murmur, Pulse quality', status: 'N', note: '' },
-    { id: 'resp', label: 'Respiratory', desc: 'Lung sounds, Respiratory effort', status: 'N', note: '' },
-    { id: 'gi', label: 'GI / Abdominal', desc: 'Palpation, Pain, Mass', status: 'N', note: '' },
-    { id: 'gu', label: 'Genitourinary', desc: 'Bladder, Prostate, Discharge', status: 'N', note: '' },
-    { id: 'integ', label: 'Integumentary', desc: 'Skin, Coat, Ectoparasites', status: 'N', note: '' },
-    { id: 'msk', label: 'Musculoskeletal', desc: 'Lameness, ROM, Joints', status: 'N', note: '' },
-    { id: 'neuro', label: 'Neurological', desc: 'CP, Reflexes, Mentation', status: 'N', note: '' }
-  ]);
-  const [loading, setLoading] = useState(false);
-  const [toast, setToast] = useState('');
-
-  const showToast = (msg) => {
-    setToast(msg);
-    setTimeout(() => setToast(''), 3000);
-  };
-
-  const updateSystem = (id, field, value) => {
-    setSystems(prev => prev.map(s => s.id === id ? { ...s, [field]: value } : s));
-  };
-
-  const formatReport = () => {
-    let report = `*Physical Examination: 24H SUNG SIM AMC*\n`;
-    report += `==========================================\n`;
-    report += `• *Patient:* ${ptInfo.name || 'Unknown'} (${ptInfo.breed || 'Unknown'})\n\n`;
-    report += `*1. Vital Signs & Nutritional Status*\n`;
-    report += `- BW: ${vitals.bw || '-'} kg / BT: ${vitals.bt || '-'} ℃\n`;
-    report += `- HR: ${vitals.hr || '-'} bpm / RR: ${vitals.rr || '-'} brpm\n`;
-    report += `- MMC/CRT: ${vitals.mmccrt || '-'}\n`;
-    report += `- BCS: ${vitals.bcs || '-'}/9 / MCS: ${vitals.mcs}\n\n`;
-    report += `*2. Systemic Review*\n`;
-    systems.forEach(sys => {
-      report += `[${sys.label}] ${sys.status === 'N' ? 'Normal ✅' : 'Abnormal 🚨'}${sys.note ? ' : ' + sys.note : ''}\n`;
-    });
-    report += `\n_Generated via Cloudflare Proxy System_`;
-    return report;
-  };
-
-  const submitToSlack = async () => {
-    if (CLOUDFLARE_WORKER_URL === "YOUR_WORKER_URL_HERE") {
-      alert("Cloudflare Worker URL이 설정되지 않았습니다.");
-      return;
-    }
-    setLoading(true);
-    try {
-      const response = await fetch(CLOUDFLARE_WORKER_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: formatReport() }),
-      });
-
-      if (response.ok) {
-        showToast("Slack으로 성공적으로 전송되었습니다!");
-      } else {
-        throw new Error("전송 실패");
-      }
-    } catch (err) {
-      alert("전송 중 오류가 발생했습니다. 클립보드 복사(COPY)를 이용하세요.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const copyToClipboard = () => {
-    const text = formatReport();
-    const textArea = document.createElement("textarea");
-    textArea.value = text;
-    document.body.appendChild(textArea);
-    textArea.select();
-    document.execCommand('copy');
-    document.body.removeChild(textArea);
-    showToast("클립보드에 복사되었습니다!");
-  };
-
-  return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 pb-28 font-sans">
-      {/* Header */}
-      <header className="bg-slate-900 text-white p-4 sticky top-0 z-50 flex justify-between items-center shadow-lg">
-        <div className="flex items-center gap-3">
-          <div className="bg-red-600 px-2 py-0.5 rounded text-[10px] font-black">24H</div>
-          <h1 className="font-black text-lg tracking-tighter">SUNG SIM <span className="text-blue-400">PE</span></h1>
+    <header class="bg-slate-900 text-white p-4 sticky top-0 z-50 flex justify-between items-center shadow-lg">
+        <div class="flex items-center gap-3">
+            <div class="bg-red-600 px-2 py-0.5 rounded text-[10px] font-black">24H</div>
+            <h1 class="font-black text-lg tracking-tighter">SUNG SIM <span class="text-blue-400">PE</span></h1>
         </div>
-        <button onClick={() => window.location.reload()} className="text-[10px] text-slate-400 font-bold uppercase tracking-widest flex items-center gap-1">
-          <RotateCcw size={12} /> Reset
+        <button onclick="location.reload()" class="text-[10px] text-slate-400 font-bold uppercase flex items-center gap-1">
+            <i data-lucide="rotate-ccw" class="w-3 h-3"></i> Reset
         </button>
-      </header>
+    </header>
 
-      <main className="p-4 space-y-6 max-w-lg mx-auto">
-        {/* 1. Basic Info */}
-        <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="w-1 h-4 bg-blue-500 rounded-full"></div>
-            <h2 className="text-[11px] font-black text-slate-400 uppercase tracking-wider">Patient Info</h2>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1">
-              <label className="text-[10px] font-bold text-slate-500 ml-1">Patient/Owner</label>
-              <input 
-                type="text" 
-                value={ptInfo.name}
-                onChange={(e) => setPtInfo({...ptInfo, name: e.target.value})}
-                placeholder="환자명/보호자" 
-                className="w-full bg-slate-50 rounded-2xl p-3 text-sm border-none focus:ring-2 focus:ring-blue-500/20" 
-              />
+    <main class="p-4 space-y-6 max-w-lg mx-auto">
+        <section class="card">
+            <div class="flex items-center gap-2 mb-4">
+                <div class="w-1 h-4 bg-blue-500 rounded-full"></div>
+                <h2 class="text-[11px] font-black text-slate-400 uppercase tracking-wider">Patient Info</h2>
             </div>
-            <div className="space-y-1">
-              <label className="text-[10px] font-bold text-slate-500 ml-1">Breed</label>
-              <input 
-                type="text" 
-                value={ptInfo.breed}
-                onChange={(e) => setPtInfo({...ptInfo, breed: e.target.value})}
-                placeholder="품종" 
-                className="w-full bg-slate-50 rounded-2xl p-3 text-sm border-none focus:ring-2 focus:ring-blue-500/20" 
-              />
+            <div class="grid grid-cols-2 gap-4">
+                <input type="text" id="pt_name" placeholder="환자명/보호자" class="w-full bg-slate-50 rounded-2xl p-4 text-sm border-none focus:ring-2 focus:ring-blue-500/20 outline-none">
+                <input type="text" id="pt_breed" placeholder="품종" class="w-full bg-slate-50 rounded-2xl p-4 text-sm border-none focus:ring-2 focus:ring-blue-500/20 outline-none">
             </div>
-          </div>
-        </div>
+        </section>
 
-        {/* 2. Vitals */}
-        <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="w-1 h-4 bg-red-500 rounded-full"></div>
-            <h2 className="text-[11px] font-black text-red-500 uppercase tracking-wider">Vital Signs</h2>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            {[
-              { label: 'BW (kg)', id: 'bw', step: '0.01' },
-              { label: 'BT (℃)', id: 'bt', step: '0.1' },
-              { label: 'HR (bpm)', id: 'hr', step: '1' },
-              { label: 'RR (brpm)', id: 'rr', step: '1' }
-            ].map(v => (
-              <div key={v.id} className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-500 ml-1">{v.label}</label>
-                <input 
-                  type="number" 
-                  step={v.step}
-                  value={vitals[v.id]}
-                  onChange={(e) => setVitals({...vitals, [v.id]: e.target.value})}
-                  className="w-full bg-slate-50 rounded-2xl p-3 text-sm border-none focus:ring-1 focus:ring-blue-500" 
-                />
-              </div>
-            ))}
-            <div className="col-span-2 space-y-1">
-              <label className="text-[10px] font-bold text-slate-500 ml-1 uppercase">MMC & CRT</label>
-              <input 
-                type="text" 
-                value={vitals.mmccrt}
-                onChange={(e) => setVitals({...vitals, mmccrt: e.target.value})}
-                placeholder="Pink, Moist / < 2s" 
-                className="w-full bg-slate-50 rounded-2xl p-3 text-sm border-none focus:ring-1 focus:ring-blue-500" 
-              />
+        <section class="card">
+            <div class="flex items-center gap-2 mb-4">
+                <div class="w-1 h-4 bg-red-500 rounded-full"></div>
+                <h2 class="text-[11px] font-black text-red-500 uppercase tracking-wider">Vital Signs</h2>
             </div>
-            <div className="col-span-2 grid grid-cols-2 gap-3 mt-2">
-              <div className="p-4 bg-blue-50 rounded-2xl">
-                <label className="text-[9px] font-black text-blue-600 block mb-2 uppercase">BCS (1-9)</label>
-                <select 
-                  value={vitals.bcs}
-                  onChange={(e) => setVitals({...vitals, bcs: e.target.value})}
-                  className="w-full bg-white border-none rounded-xl text-xs p-2 outline-none"
-                >
-                  <option value="">Select</option>
-                  {[...Array(9)].map((_, i) => <option key={i+1} value={i+1}>{i+1}</option>)}
-                </select>
-              </div>
-              <div className="p-4 bg-indigo-50 rounded-2xl">
-                <label className="text-[9px] font-black text-indigo-600 block mb-2 uppercase">MCS (Muscle)</label>
-                <select 
-                  value={vitals.mcs}
-                  onChange={(e) => setVitals({...vitals, mcs: e.target.value})}
-                  className="w-full bg-white border-none rounded-xl text-xs p-2 outline-none"
-                >
-                  <option value="Normal">Normal</option>
-                  <option value="Mild">Mild</option>
-                  <option value="Moderate">Mod</option>
-                  <option value="Severe">Sev</option>
-                </select>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* 3. Systems Review */}
-        <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100">
-          <div className="flex items-center gap-2 mb-6">
-            <div className="w-1 h-4 bg-slate-800 rounded-full"></div>
-            <h2 className="text-[11px] font-black text-slate-400 uppercase tracking-wider">Systemic Review</h2>
-          </div>
-          <div className="space-y-6">
-            {systems.map((sys) => (
-              <div key={sys.id} className="border-b border-slate-50 pb-6 last:border-0">
-                <div className="flex justify-between items-start mb-3">
-                  <div>
-                    <h3 className="text-sm font-black text-slate-800">{sys.label}</h3>
-                    <p className="text-[9px] text-slate-400 font-bold uppercase tracking-tight mt-0.5">{sys.desc}</p>
-                  </div>
-                  <div className="flex bg-slate-100 rounded-2xl p-1 gap-1">
-                    {['N', 'AB'].map(st => (
-                      <button
-                        key={st}
-                        onClick={() => updateSystem(sys.id, 'status', st)}
-                        className={`px-5 py-2 rounded-xl text-[10px] font-black transition-all ${
-                          sys.status === st 
-                            ? 'bg-white shadow-sm ' + (st === 'N' ? 'text-blue-600' : 'text-red-600')
-                            : 'text-slate-400'
-                        }`}
-                      >
-                        {st}
-                      </button>
-                    ))}
-                  </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div class="space-y-1">
+                    <label class="text-[10px] font-bold text-slate-500 ml-1">BW (kg)</label>
+                    <input type="number" id="bw" step="0.01" class="w-full bg-slate-50 rounded-2xl p-4 text-sm border-none outline-none focus:ring-1 focus:ring-blue-500">
                 </div>
-                <input 
-                  type="text" 
-                  value={sys.note}
-                  onChange={(e) => updateSystem(sys.id, 'note', e.target.value)}
-                  placeholder="이상 소견(Remarks)..." 
-                  className="w-full text-xs bg-slate-50 p-4 rounded-2xl outline-none focus:ring-1 focus:ring-blue-100 border-none" 
-                />
-              </div>
-            ))}
-          </div>
-        </div>
-      </main>
+                <div class="space-y-1">
+                    <label class="text-[10px] font-bold text-slate-500 ml-1">BT (℃)</label>
+                    <input type="number" id="bt" step="0.1" class="w-full bg-slate-50 rounded-2xl p-4 text-sm border-none outline-none focus:ring-1 focus:ring-blue-500">
+                </div>
+                <div class="space-y-1">
+                    <label class="text-[10px] font-bold text-slate-500 ml-1">HR (bpm)</label>
+                    <input type="number" id="hr" class="w-full bg-slate-50 rounded-2xl p-4 text-sm border-none outline-none focus:ring-1 focus:ring-blue-500">
+                </div>
+                <div class="space-y-1">
+                    <label class="text-[10px] font-bold text-slate-500 ml-1">RR (brpm)</label>
+                    <input type="number" id="rr" class="w-full bg-slate-50 rounded-2xl p-4 text-sm border-none outline-none focus:ring-1 focus:ring-blue-500">
+                </div>
+                <div class="col-span-2 space-y-1">
+                    <label class="text-[10px] font-bold text-slate-500 ml-1 uppercase">MMC & CRT</label>
+                    <input type="text" id="mmc_crt" placeholder="Pink, Moist / < 2s" class="w-full bg-slate-50 rounded-2xl p-4 text-sm border-none outline-none focus:ring-1 focus:ring-blue-500">
+                </div>
+                <div class="col-span-2 grid grid-cols-2 gap-3 mt-2">
+                    <div class="p-4 bg-blue-50 rounded-2xl">
+                        <label class="text-[9px] font-black text-blue-600 block mb-2 uppercase">BCS (1-9)</label>
+                        <select id="bcs" class="w-full bg-white border-none rounded-xl text-xs p-2 outline-none">
+                            <option value="">Select</option>
+                            <script>for(let i=1;i<=9;i++) document.write(`<option value="${i}">${i}</option>`)</script>
+                        </select>
+                    </div>
+                    <div class="p-4 bg-indigo-50 rounded-2xl">
+                        <label class="text-[9px] font-black text-indigo-600 block mb-2 uppercase">MCS (Muscle)</label>
+                        <select id="mcs" class="w-full bg-white border-none rounded-xl text-xs p-2 outline-none">
+                            <option value="Normal">Normal</option>
+                            <option value="Mild">Mild</option>
+                            <option value="Moderate">Moderate</option>
+                            <option value="Severe">Severe</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </section>
 
-      {/* Bottom Bar */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/80 backdrop-blur-xl border-t border-slate-100 flex gap-3 z-50 max-w-lg mx-auto">
-        <button 
-          onClick={copyToClipboard}
-          className="flex-1 bg-slate-100 text-slate-600 font-bold py-4 rounded-3xl active:scale-95 transition flex items-center justify-center gap-2 text-sm"
-        >
-          <Copy size={18} /> COPY
-        </button>
-        <button 
-          onClick={submitToSlack}
-          disabled={loading}
-          className="flex-[2] bg-blue-600 text-white font-black py-4 rounded-3xl shadow-xl shadow-blue-100 active:scale-95 transition flex items-center justify-center gap-2 text-sm disabled:bg-slate-400"
-        >
-          {loading ? "SENDING..." : <><Send size={18} /> SEND TO SLACK</>}
-        </button>
-      </div>
+        <section class="card">
+            <div class="flex items-center gap-2 mb-6">
+                <div class="w-1 h-4 bg-slate-800 rounded-full"></div>
+                <h2 class="text-[11px] font-black text-slate-400 uppercase tracking-wider">Systemic Review (N/AB)</h2>
+            </div>
+            <div id="systems-container" class="space-y-6">
+                </div>
+        </section>
+    </main>
 
-      {/* Toast */}
-      <div className={`fixed bottom-24 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-8 py-4 rounded-full text-xs font-bold shadow-2xl transition-all duration-300 z-[100] ${toast ? 'opacity-100 scale-100' : 'opacity-0 scale-90 pointer-events-none'}`}>
-        {toast}
-      </div>
+    <div class="fixed bottom-0 left-0 right-0 p-4 bg-white/80 backdrop-blur-xl border-t border-slate-100 flex gap-3 z-50 max-w-lg mx-auto">
+        <button onclick="copyToClipboard()" class="flex-1 bg-slate-100 text-slate-600 font-bold py-4 rounded-3xl active-btn transition text-sm flex items-center justify-center gap-2">
+            <i data-lucide="copy" class="w-4 h-4"></i> COPY
+        </button>
+        <button id="sendBtn" onclick="submitToSlack()" class="flex-[2] bg-blue-600 text-white font-black py-4 rounded-3xl shadow-xl shadow-blue-100 active-btn transition flex items-center justify-center gap-2 text-sm">
+            <i data-lucide="send" class="w-4 h-4"></i> SEND TO SLACK
+        </button>
     </div>
-  );
-};
 
-export default App;
+    <div id="toast" class="fixed bottom-24 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-8 py-4 rounded-full text-xs font-bold shadow-2xl opacity-0 transition-all duration-300 pointer-events-none z-[100]">
+        메시지
+    </div>
+
+    <script>
+        // Cloudflare Worker URL (본인의 URL로 교체하세요)
+        const CLOUDFLARE_WORKER_URL = "https://vet-pe-proxy.sj-22f.workers.dev"; 
+
+        const systems = [
+            { id: 'eent', label: 'EENT', desc: 'Eyes, Ears, Nose, Throat' },
+            { id: 'ln', label: 'Lymph Nodes', desc: 'Submandibular, Popliteal, etc.' },
+            { id: 'cv', label: 'Cardio', desc: 'Heart Murmur, Pulse quality' },
+            { id: 'resp', label: 'Respiratory', desc: 'Lung sounds, Effort' },
+            { id: 'gi', label: 'GI / Abdominal', desc: 'Palpation, Pain, Mass' },
+            { id: 'gu', label: 'Genitourinary', desc: 'Bladder, Prostate, Discharge' },
+            { id: 'integ', label: 'Integumentary', desc: 'Skin, Coat, Parasites' },
+            { id: 'msk', label: 'Musculoskeletal', desc: 'Lameness, ROM, Joints' },
+            { id: 'neuro', label: 'Neurological', desc: 'CP, Reflexes, Mentation' }
+        ];
+
+        // 항목 생성
+        const container = document.getElementById('systems-container');
+        systems.forEach(sys => {
+            const div = document.createElement('div');
+            div.className = 'border-b border-slate-50 pb-6 last:border-0';
+            div.innerHTML = `
+                <div class="flex justify-between items-start mb-3">
+                    <div>
+                        <h3 class="text-sm font-black text-slate-800">${sys.label}</h3>
+                        <p class="text-[9px] text-slate-400 font-bold uppercase mt-0.5">${sys.desc}</p>
+                    </div>
+                    <div class="flex bg-slate-100 rounded-2xl p-1 gap-1">
+                        <label class="cursor-pointer">
+                            <input type="radio" name="${sys.id}_st" value="N" checked class="hidden peer">
+                            <span class="px-5 py-2 block text-[10px] font-black rounded-xl transition-all peer-checked:bg-white peer-checked:text-blue-600 peer-checked:shadow-sm">N</span>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="${sys.id}_st" value="AB" class="hidden peer">
+                            <span class="px-5 py-2 block text-[10px] font-black rounded-xl transition-all peer-checked:bg-white peer-checked:text-red-600 peer-checked:shadow-sm">AB</span>
+                        </label>
+                    </div>
+                </div>
+                <input type="text" id="${sys.id}_note" placeholder="이상 소견(Remarks)..." class="w-full text-xs bg-slate-50 p-4 rounded-2xl outline-none focus:ring-1 focus:ring-blue-100 border-none">
+            `;
+            container.appendChild(div);
+        });
+
+        // 아이콘 초기화
+        lucide.createIcons();
+
+        function formatReport() {
+            const ptName = document.getElementById('pt_name').value || 'Unknown';
+            const ptBreed = document.getElementById('pt_breed').value || 'Unknown';
+            const bw = document.getElementById('bw').value;
+            const bt = document.getElementById('bt').value;
+            const hr = document.getElementById('hr').value;
+            const rr = document.getElementById('rr').value;
+            const mmccrt = document.getElementById('mmc_crt').value;
+            const bcs = document.getElementById('bcs').value;
+            const mcs = document.getElementById('mcs').value;
+
+            let report = `*Physical Examination Report: 24H SUNG SIM AMC*\n`;
+            report += `==========================================\n`;
+            report += `• *Patient:* ${ptName} (${ptBreed})\n\n`;
+            report += `*1. Vital Signs & Nutritional Status*\n`;
+            report += `- BW: ${bw || '-'} kg / BT: ${bt || '-'} ℃\n`;
+            report += `- HR: ${hr || '-'} bpm / RR: ${rr || '-'} brpm\n`;
+            report += `- MMC/CRT: ${mmccrt || '-'}\n`;
+            report += `- BCS: ${bcs || '-'}/9 / MCS: ${mcs}\n\n`;
+            report += `*2. Systemic Review*\n`;
+            
+            systems.forEach(sys => {
+                const status = document.querySelector(`input[name="${sys.id}_st"]:checked`).value;
+                const note = document.getElementById(`${sys.id}_note`).value;
+                report += `[${sys.label}] ${status === 'N' ? 'Normal ✅' : 'Abnormal 🚨'}${note ? ' : ' + note : ''}\n`;
+            });
+            return report;
+        }
+
+        async function submitToSlack() {
+            const btn = document.getElementById('sendBtn');
+            btn.disabled = true;
+            btn.innerHTML = 'SENDING...';
+
+            try {
+                const response = await fetch(CLOUDFLARE_WORKER_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text: formatReport() }),
+                });
+
+                if (response.ok) {
+                    showToast("Slack으로 전송되었습니다!");
+                } else {
+                    throw new Error();
+                }
+            } catch (err) {
+                alert("전송 실패. Worker URL 설정을 확인하시거나 COPY 기능을 이용하세요.");
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i data-lucide="send" class="w-4 h-4"></i> SEND TO SLACK';
+                lucide.createIcons();
+            }
+        }
+
+        function copyToClipboard() {
+            const text = formatReport();
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+            showToast("클립보드에 복사되었습니다!");
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.innerText = msg;
+            toast.style.opacity = '1';
+            setTimeout(() => { toast.style.opacity = '0'; }, 3000);
+        }
+    </script>
+</body>
+</html>
