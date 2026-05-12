@@ -1,0 +1,1211 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>신체검사 체크리스트 — 성심동물의료센터</title>
+
+<!-- iOS 홈 화면 아이콘 및 웹앱 최적화 설정 -->
+<link rel="apple-touch-icon" href="로고_사진.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="신체검사">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Noto+Sans+KR:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --canvas:        #FFFFFF;
+  --ink:           #222222;
+  --body-c:        #3F3F3F;
+  --muted:         #6A6A6A;
+  --primary:       #1E8CAA;
+  --primary-light: #E8F6FA;
+  --primary-mid:   #B3DDE8;
+  --primary-soft:  #F2FAFB;
+  --alert:         #E6000A;
+  --alert-light:   #FFF0F0;
+  --alert-mid:     #FFD6D6;
+  --surface-soft:  #F7F7F7;
+  --surface-strong:#F2F2F2;
+  --hairline:      #DDDDDD;
+  --hairline-dark: #CCCCCC;
+  --sans: 'Noto Sans KR','Inter',-apple-system,sans-serif;
+  --mono: 'Inter',monospace;
+  --r: 8px; --rb: 6px; --ri: 6px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--surface-soft);color:var(--body-c);font-family:var(--sans);font-size:14px;line-height:1.55;min-height:100vh;}
+
+/* HEADER */
+.app-header{background:var(--canvas);border-bottom:1px solid var(--hairline);padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+.hdr-left{display:flex;align-items:center;gap:14px;}
+.hdr-logo{height:36px;width:auto;}
+.hdr-div{width:1px;height:22px;background:var(--hairline);}
+.hdr-title{font-size:14px;font-weight:600;color:var(--ink);}
+.hdr-right{display:flex;align-items:center;gap:10px;}
+.prog-text{font-size:11px;color:var(--muted);font-family:var(--mono);}
+.prog-bg{width:96px;height:4px;background:var(--hairline);border-radius:2px;overflow:hidden;}
+.prog-fill{height:100%;background:var(--primary);border-radius:2px;transition:width .3s;width:0%;}
+
+/* PAGE */
+.page{max-width:780px;margin:0 auto;padding:20px 20px 96px;}
+
+/* PATIENT BAR */
+.pt-bar{background:var(--canvas);border:1px solid var(--hairline);border-radius:var(--r);padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;gap:18px;flex-wrap:wrap;}
+.pt-label{font-size:11px;font-weight:600;color:var(--primary);letter-spacing:.06em;text-transform:uppercase;white-space:nowrap;}
+.pt-field{display:flex;flex-direction:column;gap:3px;}
+.pt-field label{font-size:10px;color:var(--muted);font-weight:500;letter-spacing:.04em;}
+.pt-field input,.pt-field select{background:var(--canvas);border:1px solid var(--hairline);color:var(--ink);font-family:var(--sans);font-size:13px;font-weight:500;padding:5px 10px;border-radius:var(--ri);outline:none;transition:border-color .15s,box-shadow .15s;}
+.pt-field input:focus,.pt-field select:focus{border-color:var(--primary);box-shadow:0 0 0 2px rgba(30,140,170,.12);}
+
+/* SECTION CARD */
+.sc{background:var(--canvas);border:1px solid var(--hairline);border-radius:var(--r);margin-bottom:14px;overflow:hidden;}
+.sc-hdr{padding:12px 16px 10px;border-bottom:1px solid var(--hairline);display:flex;align-items:center;gap:10px;}
+.sc-bar{width:4px;height:26px;background:var(--primary);flex-shrink:0;}
+.sc-tt{font-size:13px;font-weight:600;color:var(--ink);}
+.sc-sub{font-size:10px;color:var(--muted);margin-top:1px;}
+.sc-badge{margin-left:auto;font-size:11px;font-family:var(--mono);padding:2px 8px;border-radius:10px;background:var(--surface-soft);color:var(--muted);border:1px solid var(--hairline);transition:all .2s;}
+.sc-badge.done{background:var(--primary-light);border-color:var(--primary-mid);color:var(--primary);}
+.sc-badge.abn{background:var(--alert-light);border-color:var(--alert-mid);color:var(--alert);}
+.sc-body{padding:12px 16px;display:flex;flex-direction:column;gap:10px;}
+
+/* EXAM ROW */
+.er{display:grid;grid-template-columns:124px 1fr;gap:12px;align-items:start;padding:8px 10px;border-radius:6px;border:1px solid transparent;transition:border-color .15s,background .15s;}
+.er:hover{background:var(--surface-soft);border-color:var(--hairline);}
+.er.r-abn{border-color:var(--alert-mid);background:var(--alert-light);}
+.er.r-noted{border-color:var(--primary-mid);background:var(--primary-light);}
+.el{font-size:13px;font-weight:500;color:var(--ink);}
+.es{font-size:10px;color:var(--muted);margin-top:2px;}
+.ec{display:flex;flex-direction:column;gap:6px;}
+
+/* TOGGLES */
+.tg{display:flex;gap:4px;flex-wrap:wrap;}
+.tog{font-family:var(--sans);font-size:12px;padding:4px 11px;border-radius:var(--rb);border:1px solid var(--hairline);background:var(--canvas);color:var(--muted);cursor:pointer;transition:all .12s;white-space:nowrap;}
+.tog:hover{border-color:var(--hairline-dark);color:var(--body-c);}
+.tog.sn{background:var(--primary-light);border-color:var(--primary-mid);color:var(--primary);font-weight:500;}
+.tog.sa{background:var(--alert-light);border-color:var(--alert-mid);color:var(--alert);font-weight:500;}
+
+/* CHIPS */
+.fw{display:flex;flex-wrap:wrap;gap:4px;}
+.chip{display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--muted);padding:3px 9px 3px 7px;border-radius:var(--rb);border:1px solid var(--hairline);background:var(--canvas);cursor:pointer;transition:all .12s;user-select:none;}
+.chip:hover{border-color:var(--hairline-dark);color:var(--body-c);}
+.chip input{display:none;}
+.cdot{width:5px;height:5px;border-radius:50%;background:currentColor;opacity:.5;flex-shrink:0;}
+.chip.cn{background:var(--primary-light);border-color:var(--primary-mid);color:var(--primary);}
+.chip.ca{background:var(--alert-light);border-color:var(--alert-mid);color:var(--alert);}
+.chip.ct{background:var(--primary-soft);border-color:var(--primary-mid);color:var(--primary);}
+
+/* NUMERIC */
+.nr{display:flex;align-items:center;gap:7px;flex-wrap:wrap;}
+.ni::-webkit-inner-spin-button,.ni::-webkit-outer-spin-button{-webkit-appearance:none;margin:0;}
+.ni{-moz-appearance:textfield;}
+.ni{background:var(--canvas);border:1px solid var(--hairline);color:var(--ink);font-family:var(--mono);font-size:14px;font-weight:600;padding:5px 9px;border-radius:var(--ri);outline:none;width:70px;text-align:center;transition:border-color .15s,box-shadow .15s;}
+.ni:focus{border-color:var(--primary);box-shadow:0 0 0 2px rgba(30,140,170,.12);}
+.ni.vn{border-color:var(--primary-mid);background:var(--primary-soft);}
+.ni.va{border-color:var(--alert-mid);background:var(--alert-light);}
+.nu{font-size:11px;color:var(--muted);}
+.narr{font-size:11px;color:var(--hairline-dark);}
+.nconv{font-family:var(--mono);font-size:14px;font-weight:600;color:var(--primary);min-width:48px;}
+.nref{font-size:10px;color:var(--muted);background:var(--surface-soft);border:1px solid var(--hairline);padding:2px 7px;border-radius:4px;}
+
+/* BCS */
+.bcs-w{display:flex;gap:4px;align-items:center;flex-wrap:wrap;}
+.bcs-b{width:31px;height:31px;border-radius:var(--rb);border:1px solid var(--hairline);background:var(--canvas);color:var(--muted);font-family:var(--mono);font-size:12px;font-weight:600;cursor:pointer;transition:all .12s;display:flex;align-items:center;justify-content:center;}
+.bcs-b:hover{border-color:var(--hairline-dark);}
+.bcs-b.bl{border-color:var(--primary-mid);background:var(--primary-light);color:var(--primary);}
+.bcs-b.bo{border-color:var(--primary-mid);background:var(--primary-light);color:var(--primary);}
+.bcs-b.bh{border-color:var(--alert-mid);background:var(--alert-light);color:var(--alert);}
+.bcs-lbl{font-size:12px;color:var(--muted);margin-left:6px;font-family:var(--mono);}
+
+/* HYDRATION */
+.hyd-grid{display:flex;flex-direction:column;gap:3px;}
+.hyd-opt{display:flex;align-items:flex-start;gap:8px;padding:6px 10px;border-radius:var(--rb);border:1px solid var(--hairline);background:var(--canvas);cursor:pointer;transition:all .12s;}
+.hyd-opt:hover{border-color:var(--hairline-dark);background:var(--surface-soft);}
+.hyd-opt.hn{border-color:var(--primary-mid);background:var(--primary-light);}
+.hyd-opt.ha{border-color:var(--alert-mid);background:var(--alert-light);}
+.hyd-g{font-size:12px;font-weight:600;color:var(--ink);min-width:50px;padding-top:1px;}
+.hn .hyd-g{color:var(--primary);} .ha .hyd-g{color:var(--alert);}
+.hyd-d{font-size:11px;color:var(--muted);line-height:1.4;}
+.hn .hyd-d{color:var(--primary);opacity:.8;} .ha .hyd-d{color:var(--alert);opacity:.8;}
+
+/* MCS */
+.mcs-grid{display:flex;flex-direction:column;gap:3px;}
+.mcs-opt{display:flex;align-items:flex-start;gap:8px;padding:6px 10px;border-radius:var(--rb);border:1px solid var(--hairline);background:var(--canvas);cursor:pointer;transition:all .12s;}
+.mcs-opt:hover{border-color:var(--hairline-dark);background:var(--surface-soft);}
+.mcs-opt.mn{border-color:var(--primary-mid);background:var(--primary-light);}
+.mcs-opt.ma{border-color:var(--alert-mid);background:var(--alert-light);}
+.mcs-g{font-size:12px;font-weight:600;color:var(--ink);min-width:88px;padding-top:1px;}
+.mn .mcs-g{color:var(--primary);} .ma .mcs-g{color:var(--alert);}
+.mcs-d{font-size:11px;color:var(--muted);line-height:1.4;}
+
+/* GRADE */
+.grade-w{display:flex;gap:4px;align-items:center;flex-wrap:wrap;}
+.glbl{font-size:11px;color:var(--muted);}
+.gb{width:27px;height:27px;border-radius:4px;border:1px solid var(--hairline);background:var(--canvas);color:var(--muted);font-family:var(--mono);font-size:11px;cursor:pointer;transition:all .12s;display:flex;align-items:center;justify-content:center;}
+.gb:hover{border-color:var(--hairline-dark);}
+.gb.gs{background:var(--primary-light);border-color:var(--primary-mid);color:var(--primary);font-weight:600;}
+
+/* LN */
+.ln-table{display:flex;flex-direction:column;gap:5px;}
+.ln-row{display:flex;align-items:center;gap:10px;}
+.ln-name{font-size:12px;color:var(--body-c);min-width:96px;}
+
+/* MEMO */
+.mi{background:var(--canvas);border:1px solid var(--hairline);color:var(--body-c);font-family:var(--sans);font-size:12px;padding:6px 10px;border-radius:var(--ri);outline:none;width:100%;resize:vertical;min-height:44px;transition:border-color .15s,box-shadow .15s;line-height:1.5;}
+.mi:focus{border-color:var(--primary);box-shadow:0 0 0 2px rgba(30,140,170,.12);}
+.mi::placeholder{color:var(--hairline-dark);}
+
+/* BOTTOM */
+.bot{position:fixed;bottom:0;left:0;right:0;background:var(--canvas);border-top:1px solid var(--hairline);padding:11px 20px;display:flex;align-items:center;justify-content:space-between;z-index:50;}
+.bot-stat{font-size:12px;color:var(--muted);}
+.btn-row{display:flex;gap:7px;}
+.btn{font-family:var(--sans);font-size:13px;font-weight:500;padding:7px 16px;border-radius:var(--rb);border:1px solid var(--hairline);cursor:pointer;transition:all .12s;background:var(--canvas);color:var(--body-c);}
+.btn:hover{border-color:var(--hairline-dark);background:var(--surface-soft);}
+.btn-p{background:var(--primary);color:#fff;border-color:var(--primary);}
+.btn-p:hover{background:#187f9a;border-color:#187f9a;}
+.btn-ghost{color:var(--muted);}
+.btn-d:hover{border-color:var(--alert);color:var(--alert);background:var(--alert-light);}
+.btn-sending{opacity:.55;pointer-events:none;}
+
+/* MODAL */
+.modal-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.32);z-index:200;align-items:center;justify-content:center;}
+.modal-ov.open{display:flex;}
+.modal{background:var(--canvas);border:1px solid var(--hairline);border-radius:var(--r);padding:22px;width:92%;max-width:540px;max-height:85vh;overflow-y:auto;}
+.modal-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+.modal-title{font-size:14px;font-weight:600;color:var(--ink);}
+.modal-close{background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;line-height:1;}
+.modal-ta{width:100%;height:320px;background:var(--surface-soft);border:1px solid var(--hairline);color:var(--body-c);font-family:var(--mono);font-size:12px;padding:11px;border-radius:var(--ri);resize:vertical;outline:none;line-height:1.7;}
+.modal-foot{display:flex;gap:7px;justify-content:flex-end;margin-top:10px;}
+.send-res{font-size:12px;padding:6px 11px;border-radius:4px;display:none;margin-top:7px;}
+.send-res.ok{background:var(--primary-light);color:var(--primary);border:1px solid var(--primary-mid);}
+.send-res.err{background:var(--alert-light);color:var(--alert);border:1px solid var(--alert-mid);}
+
+::-webkit-scrollbar{width:5px;}
+::-webkit-scrollbar-track{background:var(--surface-soft);}
+::-webkit-scrollbar-thumb{background:var(--hairline-dark);border-radius:3px;}
+@media(max-width:580px){
+  .er{grid-template-columns:1fr;}
+  .page{padding:14px 12px 96px;}
+  .hdr-div,.hdr-title{display:none;}
+  .prog-bg{display:none;}
+}
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <div class="hdr-left">
+    <img src="로고_사진.png" alt="성심동물의료센터" class="hdr-logo">
+    <div class="hdr-div"></div>
+    <span class="hdr-title">신체검사</span>
+  </div>
+  <div class="hdr-right">
+    <span class="prog-text" id="progText">0 항목</span>
+    <div class="prog-bg"><div class="prog-fill" id="progFill"></div></div>
+  </div>
+</header>
+
+<div class="page">
+
+  <!-- PATIENT -->
+  <div class="pt-bar">
+    <span class="pt-label">환자</span>
+    <div class="pt-field">
+      <label>이름</label>
+      <input type="text" id="ptName" placeholder="환자명" autocomplete="off" style="min-width:90px;" oninput="saveDraft()">
+    </div>
+    <div class="pt-field">
+      <label>종</label>
+      <span style="font-size:10px; color:var(--muted); margin-bottom:-5px;">종 선택 시 정상범위 자동 업데이트</span>
+      <select id="ptSpecies" onchange="onSpecies(); saveDraft();">
+        <option value="">—</option>
+        <option value="dog">개</option>
+        <option value="cat">고양이</option>
+      </select>
+    </div>
+    <div class="pt-field">
+      <label>날짜</label>
+      <input type="date" id="ptDate" onchange="saveDraft()">
+    </div>
+  </div>
+
+  <!-- 1. GENERAL -->
+  <div class="sc" id="sec-general">
+    <div class="sc-hdr"><div class="sc-bar"></div><div><div class="sc-tt">전반적 평가</div><div class="sc-sub">General Assessment</div></div><span class="sc-badge" id="b-general">—</span></div>
+    <div class="sc-body">
+      <div class="er" id="r-mentation">
+        <div><div class="el">의식 수준</div><div class="es">Mentation</div></div>
+        <div class="ec"><div class="tg" id="tg-mentation">
+          <button class="tog" onclick="T('mentation',this,'BAR',1)">BAR</button>
+          <button class="tog" onclick="T('mentation',this,'QAR',1)">QAR</button>
+          <button class="tog" onclick="T('mentation',this,'Depressed',0)">Depressed</button>
+          <button class="tog" onclick="T('mentation',this,'Obtunded',0)">Obtunded</button>
+          <button class="tog" onclick="T('mentation',this,'Stupor',0)">Stupor</button>
+          <button class="tog" onclick="T('mentation',this,'Coma',0)">Coma</button>
+        </div></div>
+      </div>
+      <div class="er" id="r-posture">
+        <div><div class="el">자세 / 보행</div><div class="es">Posture / Gait</div></div>
+        <div class="ec"><div class="tg" id="tg-posture">
+          <button class="tog" onclick="T('posture',this,'정상',1)">정상</button>
+          <button class="tog" onclick="T('posture',this,'앉기 거부',0)">앉기 거부</button>
+          <button class="tog" onclick="T('posture',this,'기립 불안정',0)">기립 불안정</button>
+          <button class="tog" onclick="T('posture',this,'기립 불능',0)">기립 불능</button>
+          <button class="tog" onclick="T('posture',this,'보행 이상',0)">보행 이상</button>
+        </div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. VITALS -->
+  <div class="sc" id="sec-vitals">
+    <div class="sc-hdr"><div class="sc-bar"></div><div><div class="sc-tt">활력징후</div><div class="sc-sub">Vital Signs</div></div><span class="sc-badge" id="b-vitals">—</span></div>
+    <div class="sc-body">
+      <div class="er" id="r-temp">
+        <div><div class="el">체온</div><div class="es">Temperature</div></div>
+        <div class="ec"><div class="nr">
+          <input type="number" class="ni" id="i-temp" step=".1" placeholder="38.5" oninput="handleTemp(this)">
+          <span class="nu">°C</span>
+          <span class="nref" id="ref-temp">개 37.5–39.2 / 고양이 38.0–39.2</span>
+        </div></div>
+      </div>
+      <div class="er" id="r-hr">
+        <div><div class="el">심박수</div><div class="es">Heart Rate</div></div>
+        <div class="ec"><div class="nr">
+          <input type="number" class="ni" id="i-hr15" step="1" min="0" placeholder="30" oninput="handleRate('hr',this)">
+          <span class="nu">회/15sec</span>
+          <span class="narr">→</span>
+          <span class="nconv" id="c-hr">—</span>
+          <span class="nu">bpm</span>
+          <span class="nref" id="ref-hr">개 60–140 / 고양이 160–240</span>
+        </div></div>
+      </div>
+      <div class="er" id="r-rr">
+        <div><div class="el">호흡수</div><div class="es">Resp. Rate</div></div>
+        <div class="ec"><div class="nr">
+          <input type="number" class="ni" id="i-rr15" step="1" min="0" placeholder="6" oninput="handleRate('rr',this)">
+          <span class="nu">회/15sec</span>
+          <span class="narr">→</span>
+          <span class="nconv" id="c-rr">—</span>
+          <span class="nu">/min</span>
+          <span class="nref">정상 15–30/min</span>
+        </div></div>
+      </div>
+      <div class="er" id="r-bp">
+        <div><div class="el">혈압</div><div class="es">Blood Pressure</div></div>
+        <div class="ec"><div class="nr">
+          <input type="number" class="ni" id="i-bp" step="1" min="0" placeholder="120" oninput="handleBP(this)">
+          <span class="nu">mmHg (SAP)</span>
+        </div></div>
+      </div>
+      <div class="er" id="r-resp_effort">
+        <div><div class="el">호흡 노력</div><div class="es">Resp. Effort</div></div>
+        <div class="ec"><div class="tg" id="tg-resp_effort">
+          <button class="tog" onclick="T('resp_effort',this,'정상',1)">정상</button>
+          <button class="tog" onclick="T('resp_effort',this,'경도 증가',0)">경도 증가</button>
+          <button class="tog" onclick="T('resp_effort',this,'중등도 증가',0)">중등도 증가</button>
+          <button class="tog" onclick="T('resp_effort',this,'호흡 곤란',0)">호흡 곤란</button>
+          <button class="tog" onclick="T('resp_effort',this,'복식 호흡',0)">복식 호흡</button>
+        </div></div>
+      </div>
+      <div class="er" id="r-lungs">
+        <div><div class="el">폐 청진</div><div class="es">Lung Auscultation</div></div>
+        <div class="ec">
+          <div class="fw" id="fw-lungs">
+            <label class="chip" onclick="C('lungs',this,'정상','n')"><input type="checkbox"><span class="cdot"></span>정상</label>
+            <label class="chip" onclick="C('lungs',this,'Crackle','a')"><input type="checkbox"><span class="cdot"></span>Crackle</label>
+            <label class="chip" onclick="C('lungs',this,'Wheeze','a')"><input type="checkbox"><span class="cdot"></span>Wheeze</label>
+            <label class="chip" onclick="C('lungs',this,'호흡음 감소','a')"><input type="checkbox"><span class="cdot"></span>호흡음 감소</label>
+            <label class="chip" onclick="C('lungs',this,'호흡음 소실','a')"><input type="checkbox"><span class="cdot"></span>호흡음 소실</label>
+            <label class="chip" onclick="C('lungs',this,'좌우 비대칭','a')"><input type="checkbox"><span class="cdot"></span>좌우 비대칭</label>
+          </div>
+          <textarea class="mi" id="m-lungs" placeholder="부위, 추가 소견..." rows="1" oninput="saveDraft()"></textarea>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. CV -->
+  <div class="sc" id="sec-cv">
+    <div class="sc-hdr"><div class="sc-bar"></div><div><div class="sc-tt">심혈관</div><div class="sc-sub">Cardiovascular</div></div><span class="sc-badge" id="b-cv">—</span></div>
+    <div class="sc-body">
+      <div class="er" id="r-heart_rhythm">
+        <div><div class="el">심박 리듬</div><div class="es">Heart Rhythm</div></div>
+        <div class="ec"><div class="tg" id="tg-heart_rhythm">
+          <button class="tog" onclick="T('heart_rhythm',this,'규칙',1)">규칙</button>
+          <button class="tog" onclick="T('heart_rhythm',this,'불규칙',0)">불규칙</button>
+          <button class="tog" onclick="T('heart_rhythm',this,'Gallop',0)">Gallop</button>
+        </div></div>
+      </div>
+      <div class="er" id="r-murmur">
+        <div><div class="el">심잡음</div><div class="es">Heart Murmur</div></div>
+        <div class="ec">
+          <div class="tg" id="tg-murmur">
+            <button class="tog" onclick="selMurmur(this,'없음')">없음</button>
+            <button class="tog" onclick="selMurmur(this,'있음')">있음</button>
+          </div>
+          <div class="grade-w" id="murmur-grade" style="display:none;">
+            <span class="glbl">Grade</span>
+            <button class="gb" onclick="selGrade(this,1)">1</button>
+            <button class="gb" onclick="selGrade(this,2)">2</button>
+            <button class="gb" onclick="selGrade(this,3)">3</button>
+            <button class="gb" onclick="selGrade(this,4)">4</button>
+            <button class="gb" onclick="selGrade(this,5)">5</button>
+            <button class="gb" onclick="selGrade(this,6)">6</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. MM + CRT -->
+  <div class="sc" id="sec-mm">
+    <div class="sc-hdr"><div class="sc-bar"></div><div><div class="sc-tt">점막 / CRT</div><div class="sc-sub">Mucous Membranes & CRT</div></div><span class="sc-badge" id="b-mm">—</span></div>
+    <div class="sc-body">
+      <div class="er" id="r-mm_color">
+        <div><div class="el">점막 색</div><div class="es">MM Color</div></div>
+        <div class="ec"><div class="tg" id="tg-mm_color">
+          <button class="tog" onclick="T('mm_color',this,'핑크',1)">핑크</button>
+          <button class="tog" onclick="T('mm_color',this,'창백',0)">창백</button>
+          <button class="tog" onclick="T('mm_color',this,'충혈',0)">충혈</button>
+          <button class="tog" onclick="T('mm_color',this,'황달',0)">황달</button>
+          <button class="tog" onclick="T('mm_color',this,'청색증',0)">청색증</button>
+          <button class="tog" onclick="T('mm_color',this,'점상출혈',0)">점상출혈</button>
+        </div></div>
+      </div>
+      <div class="er" id="r-mm_moist">
+        <div><div class="el">점막 습도</div><div class="es">MM Moisture</div></div>
+        <div class="ec"><div class="tg" id="tg-mm_moist">
+          <button class="tog" onclick="T('mm_moist',this,'촉촉',1)">촉촉</button>
+          <button class="tog" onclick="T('mm_moist',this,'건조',0)">건조</button>
+          <button class="tog" onclick="T('mm_moist',this,'끈적임',0)">끈적임</button>
+        </div></div>
+      </div>
+      <div class="er" id="r-crt">
+        <div><div class="el">CRT</div><div class="es">Cap. Refill Time</div></div>
+        <div class="ec"><div class="tg" id="tg-crt">
+          <button class="tog" onclick="T('crt',this,'<1sec',0)">&lt;1 sec</button>
+          <button class="tog" onclick="T('crt',this,'1-2sec',1)">1–2 sec</button>
+          <button class="tog" onclick="T('crt',this,'>2sec',0)">&gt;2 sec</button>
+        </div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. BODY CONDITION -->
+  <div class="sc" id="sec-body">
+    <div class="sc-hdr"><div class="sc-bar"></div><div><div class="sc-tt">체형 / 수화 상태</div><div class="sc-sub">BCS · MCS · Hydration</div></div><span class="sc-badge" id="b-body">—</span></div>
+    <div class="sc-body">
+      <div class="er" id="r-bcs">
+        <div><div class="el">BCS</div><div class="es">Body Condition / 9</div></div>
+        <div class="ec"><div class="bcs-w">
+          <button class="bcs-b bl" id="bcs1" onclick="selBCS(1)">1</button>
+          <button class="bcs-b bl" id="bcs2" onclick="selBCS(2)">2</button>
+          <button class="bcs-b bl" id="bcs3" onclick="selBCS(3)">3</button>
+          <button class="bcs-b bo" id="bcs4" onclick="selBCS(4)">4</button>
+          <button class="bcs-b bo" id="bcs5" onclick="selBCS(5)">5</button>
+          <button class="bcs-b bh" id="bcs6" onclick="selBCS(6)">6</button>
+          <button class="bcs-b bh" id="bcs7" onclick="selBCS(7)">7</button>
+          <button class="bcs-b bh" id="bcs8" onclick="selBCS(8)">8</button>
+          <button class="bcs-b bh" id="bcs9" onclick="selBCS(9)">9</button>
+          <span class="bcs-lbl" id="bcs-lbl">— / 9</span>
+        </div></div>
+      </div>
+      <div class="er" id="r-mcs">
+        <div><div class="el">MCS</div><div class="es">Muscle Condition</div></div>
+        <div class="ec"><div class="mcs-grid">
+          <div class="mcs-opt" onclick="selMCS(this,'정상')"><div class="mcs-g">정상</div><div class="mcs-d">전신 근육 좌우 대칭, 척추극돌기 근육으로 덮여있음</div></div>
+          <div class="mcs-opt" onclick="selMCS(this,'경도 감소')"><div class="mcs-g">경도 감소</div><div class="mcs-d">척추·골반 근육 얇아짐, 촉진 시 뼈 약간 도드라짐</div></div>
+          <div class="mcs-opt" onclick="selMCS(this,'중등도 감소')"><div class="mcs-g">중등도 감소</div><div class="mcs-d">사지 근육 감소 뚜렷, 척추·어깨·골반 뼈 잘 촉지됨</div></div>
+          <div class="mcs-opt" onclick="selMCS(this,'중증 감소')"><div class="mcs-g">중증 감소</div><div class="mcs-d">전신 근육 현저히 소실, 시진만으로 뼈 윤곽 뚜렷</div></div>
+        </div></div>
+      </div>
+      <div class="er" id="r-hydration">
+        <div><div class="el">수화 상태</div><div class="es">Hydration</div></div>
+        <div class="ec"><div class="hyd-grid">
+          <div class="hyd-opt" onclick="selHyd(this,'정상')"><div class="hyd-g">정상</div><div class="hyd-d">피부 텐트 즉시 복귀, 점막 촉촉, 안구 정상</div></div>
+          <div class="hyd-opt" onclick="selHyd(this,'<5%')"><div class="hyd-g">&lt;5%</div><div class="hyd-d">신체검사로 감지 어려움 — 병력으로 추정</div></div>
+          <div class="hyd-opt" onclick="selHyd(this,'5-8%')"><div class="hyd-g">5–8%</div><div class="hyd-d">피부 텐트 느림, 점막 건조 시작, 안구 약간 함몰</div></div>
+          <div class="hyd-opt" onclick="selHyd(this,'8-10%')"><div class="hyd-g">8–10%</div><div class="hyd-d">피부 텐트 수초 지속, 점막 건조, 안구 함몰 뚜렷</div></div>
+          <div class="hyd-opt" onclick="selHyd(this,'>10%')"><div class="hyd-g">&gt;10%</div><div class="hyd-d">피부 텐트 지속, 쇼크 동반 가능 — 즉각 처치 필요</div></div>
+        </div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. HEAD -->
+  <div class="sc" id="sec-head">
+    <div class="sc-hdr"><div class="sc-bar"></div><div><div class="sc-tt">두부</div><div class="sc-sub">Eyes · Ears · Nose · Oral</div></div><span class="sc-badge" id="b-head">—</span></div>
+    <div class="sc-body">
+      <div class="er" id="r-eyes">
+        <div><div class="el">눈</div><div class="es">Eyes</div></div>
+        <div class="ec">
+          <div class="fw" id="fw-eyes">
+            <label class="chip" onclick="C('eyes',this,'정상','n')"><input type="checkbox"><span class="cdot"></span>정상</label>
+            <label class="chip" onclick="C('eyes',this,'분비물(장액성)','t')"><input type="checkbox"><span class="cdot"></span>분비물(장액성)</label>
+            <label class="chip" onclick="C('eyes',this,'분비물(점액/화농)','a')"><input type="checkbox"><span class="cdot"></span>분비물(점액/화농)</label>
+            <label class="chip" onclick="C('eyes',this,'결막 충혈','a')"><input type="checkbox"><span class="cdot"></span>결막 충혈</label>
+            <label class="chip" onclick="C('eyes',this,'각막 혼탁','a')"><input type="checkbox"><span class="cdot"></span>각막 혼탁</label>
+            <label class="chip" onclick="C('eyes',this,'안구 함몰','a')"><input type="checkbox"><span class="cdot"></span>안구 함몰</label>
+            <label class="chip" onclick="C('eyes',this,'안구 돌출','a')"><input type="checkbox"><span class="cdot"></span>안구 돌출</label>
+            <label class="chip" onclick="C('eyes',this,'동공 비대칭','a')"><input type="checkbox"><span class="cdot"></span>동공 비대칭</label>
+            <label class="chip" onclick="C('eyes',this,'제3안검','t')"><input type="checkbox"><span class="cdot"></span>제3안검</label>
+            <label class="chip" onclick="C('eyes',this,'PLR 이상','a')"><input type="checkbox"><span class="cdot"></span>PLR 이상</label>
+            <label class="chip" onclick="C('eyes',this,'기타','t')"><input type="checkbox"><span class="cdot"></span>기타</label>
+          </div>
+          <textarea class="mi" id="m-eyes" placeholder="추가 소견 (기타 선택 시 필수)..." rows="1" oninput="saveDraft()"></textarea>
+        </div>
+      </div>
+      <div class="er" id="r-ears">
+        <div><div class="el">귀</div><div class="es">Ears</div></div>
+        <div class="ec">
+          <div class="fw" id="fw-ears">
+            <label class="chip" onclick="C('ears',this,'정상','n')"><input type="checkbox"><span class="cdot"></span>정상</label>
+            <label class="chip" onclick="C('ears',this,'분비물(갈/흑)','a')"><input type="checkbox"><span class="cdot"></span>분비물(갈/흑)</label>
+            <label class="chip" onclick="C('ears',this,'분비물(황/녹)','a')"><input type="checkbox"><span class="cdot"></span>분비물(황/녹)</label>
+            <label class="chip" onclick="C('ears',this,'혈성 분비물','a')"><input type="checkbox"><span class="cdot"></span>혈성 분비물</label>
+            <label class="chip" onclick="C('ears',this,'악취','a')"><input type="checkbox"><span class="cdot"></span>악취</label>
+            <label class="chip" onclick="C('ears',this,'발적/부종','a')"><input type="checkbox"><span class="cdot"></span>발적/부종</label>
+            <label class="chip" onclick="C('ears',this,'이개 병변','a')"><input type="checkbox"><span class="cdot"></span>이개 병변</label>
+            <label class="chip" onclick="C('ears',this,'기타','t')"><input type="checkbox"><span class="cdot"></span>기타</label>
+          </div>
+          <textarea class="mi" id="m-ears" placeholder="좌/우, 추가 소견..." rows="1" oninput="saveDraft()"></textarea>
+        </div>
+      </div>
+      <div class="er" id="r-nose">
+        <div><div class="el">코</div><div class="es">Nose</div></div>
+        <div class="ec">
+          <div class="fw" id="fw-nose">
+            <label class="chip" onclick="C('nose',this,'정상','n')"><input type="checkbox"><span class="cdot"></span>정상</label>
+            <label class="chip" onclick="C('nose',this,'분비물(장액성)','t')"><input type="checkbox"><span class="cdot"></span>분비물(장액성)</label>
+            <label class="chip" onclick="C('nose',this,'분비물(점액/화농)','a')"><input type="checkbox"><span class="cdot"></span>분비물(점액/화농)</label>
+            <label class="chip" onclick="C('nose',this,'혈성 분비물','a')"><input type="checkbox"><span class="cdot"></span>혈성 분비물</label>
+            <label class="chip" onclick="C('nose',this,'일측성','t')"><input type="checkbox"><span class="cdot"></span>일측성</label>
+            <label class="chip" onclick="C('nose',this,'양측성','a')"><input type="checkbox"><span class="cdot"></span>양측성</label>
+            <label class="chip" onclick="C('nose',this,'비대칭','a')"><input type="checkbox"><span class="cdot"></span>비대칭</label>
+          </div>
+        </div>
+      </div>
+      <div class="er" id="r-oral">
+        <div><div class="el">구강</div><div class="es">Oral Cavity</div></div>
+        <div class="ec">
+          <div class="fw" id="fw-oral">
+            <label class="chip" onclick="C('oral',this,'정상','n')"><input type="checkbox"><span class="cdot"></span>정상</label>
+            <label class="chip" onclick="C('oral',this,'치석 G1','t')"><input type="checkbox"><span class="cdot"></span>치석 G1</label>
+            <label class="chip" onclick="C('oral',this,'치석 G2','t')"><input type="checkbox"><span class="cdot"></span>치석 G2</label>
+            <label class="chip" onclick="C('oral',this,'치석 G3','a')"><input type="checkbox"><span class="cdot"></span>치석 G3</label>
+            <label class="chip" onclick="C('oral',this,'치석 G4','a')"><input type="checkbox"><span class="cdot"></span>치석 G4</label>
+            <label class="chip" onclick="C('oral',this,'치은염','a')"><input type="checkbox"><span class="cdot"></span>치은염</label>
+            <label class="chip" onclick="C('oral',this,'구내염','a')"><input type="checkbox"><span class="cdot"></span>구내염</label>
+            <label class="chip" onclick="C('oral',this,'치아 흡수','a')"><input type="checkbox"><span class="cdot"></span>치아 흡수</label>
+            <label class="chip" onclick="C('oral',this,'종괴','a')"><input type="checkbox"><span class="cdot"></span>종괴</label>
+            <label class="chip" onclick="C('oral',this,'구취(요독)','a')"><input type="checkbox"><span class="cdot"></span>구취(요독)</label>
+            <label class="chip" onclick="C('oral',this,'구취(당뇨)','a')"><input type="checkbox"><span class="cdot"></span>구취(당뇨)</label>
+          </div>
+          <textarea class="mi" id="m-oral" placeholder="추가 소견..." rows="1" oninput="saveDraft()"></textarea>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 7. NECK -->
+  <div class="sc" id="sec-neck">
+    <div class="sc-hdr"><div class="sc-bar"></div><div><div class="sc-tt">목</div><div class="sc-sub">Neck</div></div><span class="sc-badge" id="b-neck">—</span></div>
+    <div class="sc-body">
+      <div class="er" id="r-neck_pain">
+        <div><div class="el">경추 통증</div><div class="es">Cervical Pain</div></div>
+        <div class="ec"><div class="tg" id="tg-neck_pain">
+          <button class="tog" onclick="T('neck_pain',this,'없음',1)">없음</button>
+          <button class="tog" onclick="T('neck_pain',this,'경도',0)">경도</button>
+          <button class="tog" onclick="T('neck_pain',this,'중등도',0)">중등도</button>
+          <button class="tog" onclick="T('neck_pain',this,'중증',0)">중증</button>
+        </div></div>
+      </div>
+      <div class="er" id="r-neck_rom">
+        <div><div class="el">ROM</div><div class="es">Range of Motion</div></div>
+        <div class="ec"><div class="tg" id="tg-neck_rom">
+          <button class="tog" onclick="T('neck_rom',this,'정상',1)">정상</button>
+          <button class="tog" onclick="T('neck_rom',this,'제한',0)">제한</button>
+          <button class="tog" onclick="T('neck_rom',this,'현저히 제한',0)">현저히 제한</button>
+        </div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 8. LN -->
+  <div class="sc" id="sec-lymph">
+    <div class="sc-hdr"><div class="sc-bar"></div><div><div class="sc-tt">림프절</div><div class="sc-sub">Lymph Nodes</div></div><span class="sc-badge" id="b-lymph">—</span></div>
+    <div class="sc-body">
+      <div class="er" id="r-ln">
+        <div><div class="el">표재 림프절</div><div class="es">Superficial LN</div></div>
+        <div class="ec"><div class="ln-table" id="ln-table"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 9. ABDOMEN -->
+  <div class="sc" id="sec-abdomen">
+    <div class="sc-hdr"><div class="sc-bar"></div><div><div class="sc-tt">복부</div><div class="sc-sub">Abdomen</div></div><span class="sc-badge" id="b-abdomen">—</span></div>
+    <div class="sc-body">
+      <div class="er" id="r-abd_tension">
+        <div><div class="el">복압 / 팽만</div><div class="es">Tension / Distension</div></div>
+        <div class="ec"><div class="tg" id="tg-abd_tension">
+          <button class="tog" onclick="T('abd_tension',this,'정상',1)">정상</button>
+          <button class="tog" onclick="T('abd_tension',this,'복압 상승',0)">복압 상승</button>
+          <button class="tog" onclick="T('abd_tension',this,'경도 팽만',0)">경도 팽만</button>
+          <button class="tog" onclick="T('abd_tension',this,'중등도 팽만',0)">중등도 팽만</button>
+          <button class="tog" onclick="T('abd_tension',this,'심한 팽만',0)">심한 팽만</button>
+        </div></div>
+      </div>
+      <div class="er" id="r-abd_pain">
+        <div><div class="el">복통</div><div class="es">Abdominal Pain</div></div>
+        <div class="ec"><div class="tg" id="tg-abd_pain">
+          <button class="tog" onclick="T('abd_pain',this,'없음',1)">없음</button>
+          <button class="tog" onclick="T('abd_pain',this,'경도',0)">경도</button>
+          <button class="tog" onclick="T('abd_pain',this,'중등도',0)">중등도</button>
+          <button class="tog" onclick="T('abd_pain',this,'중증',0)">중증</button>
+        </div></div>
+      </div>
+      <div class="er" id="r-abd_findings">
+        <div><div class="el">촉진 소견</div><div class="es">Palpation</div></div>
+        <div class="ec">
+          <div class="fw" id="fw-abd_findings">
+            <label class="chip" onclick="C('abd_findings',this,'이상 없음','n')"><input type="checkbox"><span class="cdot"></span>이상 없음</label>
+            <label class="chip" onclick="C('abd_findings',this,'간 비대','a')"><input type="checkbox"><span class="cdot"></span>간 비대</label>
+            <label class="chip" onclick="C('abd_findings',this,'비장 비대','a')"><input type="checkbox"><span class="cdot"></span>비장 비대</label>
+            <label class="chip" onclick="C('abd_findings',this,'신장 비대','a')"><input type="checkbox"><span class="cdot"></span>신장 비대</label>
+            <label class="chip" onclick="C('abd_findings',this,'신장 소형','a')"><input type="checkbox"><span class="cdot"></span>신장 소형</label>
+            <label class="chip" onclick="C('abd_findings',this,'방광 팽만','t')"><input type="checkbox"><span class="cdot"></span>방광 팽만</label>
+            <label class="chip" onclick="C('abd_findings',this,'복수','a')"><input type="checkbox"><span class="cdot"></span>복수</label>
+            <label class="chip" onclick="C('abd_findings',this,'종괴','a')"><input type="checkbox"><span class="cdot"></span>종괴</label>
+          </div>
+          <textarea class="mi" id="m-abd_findings" placeholder="장기, 위치, 크기..." rows="1" oninput="saveDraft()"></textarea>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 10. SKIN -->
+  <div class="sc" id="sec-skin">
+    <div class="sc-hdr"><div class="sc-bar"></div><div><div class="sc-tt">피부 / 피모</div><div class="sc-sub">Skin & Haircoat</div></div><span class="sc-badge" id="b-skin">—</span></div>
+    <div class="sc-body">
+      <div class="er" id="r-haircoat">
+        <div><div class="el">피모</div><div class="es">Haircoat</div></div>
+        <div class="ec"><div class="fw" id="fw-haircoat">
+          <label class="chip" onclick="C('haircoat',this,'정상','n')"><input type="checkbox"><span class="cdot"></span>정상</label>
+          <label class="chip" onclick="C('haircoat',this,'건조/푸석','t')"><input type="checkbox"><span class="cdot"></span>건조/푸석</label>
+          <label class="chip" onclick="C('haircoat',this,'광택 소실','t')"><input type="checkbox"><span class="cdot"></span>광택 소실</label>
+          <label class="chip" onclick="C('haircoat',this,'대칭성 탈모','a')"><input type="checkbox"><span class="cdot"></span>대칭성 탈모</label>
+          <label class="chip" onclick="C('haircoat',this,'국소 탈모','a')"><input type="checkbox"><span class="cdot"></span>국소 탈모</label>
+        </div></div>
+      </div>
+      <div class="er" id="r-skin">
+        <div><div class="el">피부 병변</div><div class="es">Skin Lesions</div></div>
+        <div class="ec">
+          <div class="fw" id="fw-skin">
+            <label class="chip" onclick="C('skin',this,'정상','n')"><input type="checkbox"><span class="cdot"></span>정상</label>
+            <label class="chip" onclick="C('skin',this,'발적','a')"><input type="checkbox"><span class="cdot"></span>발적</label>
+            <label class="chip" onclick="C('skin',this,'농포','a')"><input type="checkbox"><span class="cdot"></span>농포</label>
+            <label class="chip" onclick="C('skin',this,'인설','t')"><input type="checkbox"><span class="cdot"></span>인설</label>
+            <label class="chip" onclick="C('skin',this,'찰상','a')"><input type="checkbox"><span class="cdot"></span>찰상</label>
+            <label class="chip" onclick="C('skin',this,'과색소침착','t')"><input type="checkbox"><span class="cdot"></span>과색소침착</label>
+            <label class="chip" onclick="C('skin',this,'벼룩분변','a')"><input type="checkbox"><span class="cdot"></span>벼룩분변</label>
+            <label class="chip" onclick="C('skin',this,'진드기','a')"><input type="checkbox"><span class="cdot"></span>진드기</label>
+            <label class="chip" onclick="C('skin',this,'기타','t')"><input type="checkbox"><span class="cdot"></span>기타</label>
+          </div>
+          <textarea class="mi" id="m-skin" placeholder="위치, 크기, 추가 소견..." rows="1" oninput="saveDraft()"></textarea>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 11. MASSES -->
+  <div class="sc" id="sec-masses">
+    <div class="sc-hdr"><div class="sc-bar"></div><div><div class="sc-tt">종괴</div><div class="sc-sub">Masses</div></div><span class="sc-badge" id="b-masses">—</span></div>
+    <div class="sc-body">
+      <div class="er" id="r-masses_yn">
+        <div><div class="el">종괴 유무</div></div>
+        <div class="ec"><div class="tg" id="tg-masses_yn">
+          <button class="tog" onclick="T('masses_yn',this,'없음',1)">없음</button>
+          <button class="tog" onclick="T('masses_yn',this,'있음',0)">있음</button>
+        </div></div>
+      </div>
+      <div class="er" id="r-masses_detail">
+        <div><div class="el">상세</div><div class="es">위치·크기·성상</div></div>
+        <div class="ec"><textarea class="mi" id="m-masses_detail" placeholder="위치, 크기(cm), 경도, 가동성, 통증 여부..." rows="2" oninput="saveDraft()"></textarea></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 12. REPRO -->
+  <div class="sc" id="sec-repro">
+    <div class="sc-hdr"><div class="sc-bar"></div><div><div class="sc-tt">생식기</div><div class="sc-sub">Reproductive</div></div><span class="sc-badge" id="b-repro">—</span></div>
+    <div class="sc-body">
+      <div class="er" id="r-repro">
+        <div><div class="el">소견</div><div class="es">Genital Findings</div></div>
+        <div class="ec">
+          <div class="fw" id="fw-repro">
+            <label class="chip" onclick="C('repro',this,'정상','n')"><input type="checkbox"><span class="cdot"></span>정상</label>
+            <label class="chip" onclick="C('repro',this,'포피 분비물','t')"><input type="checkbox"><span class="cdot"></span>포피 분비물</label>
+            <label class="chip" onclick="C('repro',this,'포피 분비물(화농)','a')"><input type="checkbox"><span class="cdot"></span>포피 분비물(화농)</label>
+            <label class="chip" onclick="C('repro',this,'고환 비대칭','a')"><input type="checkbox"><span class="cdot"></span>고환 비대칭</label>
+            <label class="chip" onclick="C('repro',this,'잠복고환 의심','a')"><input type="checkbox"><span class="cdot"></span>잠복고환 의심</label>
+            <label class="chip" onclick="C('repro',this,'외음부 분비물','t')"><input type="checkbox"><span class="cdot"></span>외음부 분비물</label>
+            <label class="chip" onclick="C('repro',this,'외음부 분비물(화농)','a')"><input type="checkbox"><span class="cdot"></span>외음부 분비물(화농)</label>
+            <label class="chip" onclick="C('repro',this,'외음부 부종','a')"><input type="checkbox"><span class="cdot"></span>외음부 부종</label>
+          </div>
+          <textarea class="mi" id="m-repro" placeholder="추가 소견..." rows="1" oninput="saveDraft()"></textarea>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /page -->
+
+<!-- BOTTOM BAR -->
+<div class="bot">
+  <span class="bot-stat" id="botStat">입력 대기</span>
+  <div class="btn-row">
+    <button class="btn btn-ghost btn-d" onclick="resetAll()">초기화</button>
+    <button class="btn btn-ghost" onclick="openModal()">미리보기</button>
+    <button class="btn btn-p" id="sendBtn" onclick="sendToSlack()">Slack 전송</button>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-ov" id="modal">
+  <div class="modal">
+    <div class="modal-hdr">
+      <span class="modal-title">EMR 붙여넣기 텍스트</span>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <textarea class="modal-ta" id="modalTA" readonly></textarea>
+    <div id="sendRes" class="send-res"></div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="copyText()">클립보드 복사</button>
+      <button class="btn btn-p" id="modalSendBtn" onclick="sendToSlack()">Slack 전송</button>
+      <button class="btn btn-ghost" onclick="closeModal()">닫기</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const WORKER_URL = 'https://pesungsim.sungsimamc.workers.dev/';
+const STORAGE_KEY = 'emr_draft_state'; // 임시 저장소 키
+
+// ─── STATE ───────────────────────────────────────────
+const S = {};
+let species = '';
+
+const LN_KEYS  = ['ln_mand','ln_pre','ln_ax','ln_ing','ln_pop'];
+const LN_SHORT = ['하악','견갑 전','액와','서혜','슬와'];
+const LN_FULL  = ['하악(Mandibular)','견갑 전(Prescapular)','액와(Axillary)','서혜(Inguinal)','슬와(Popliteal)'];
+
+const SEC_KEYS = {
+  general: ['mentation','posture'],
+  vitals:  ['temp','hr','rr','bp','resp_effort','lungs'], 
+  cv:      ['heart_rhythm','murmur'],
+  mm:      ['mm_color','mm_moist','crt'],
+  body:    ['bcs','mcs','hydration'],
+  head:    ['eyes','ears','nose','oral'],
+  neck:    ['neck_pain','neck_rom'],
+  lymph:   LN_KEYS,
+  abdomen: ['abd_tension','abd_pain','abd_findings'],
+  skin:    ['haircoat','skin'],
+  masses:  ['masses_yn'],
+  repro:   ['repro'],
+};
+
+const ALL_KEYS = Object.values(SEC_KEYS).flat();
+
+function gs(k){ if(!S[k]) S[k]={value:null,memo:'',findings:[],grade:null,per15:null}; return S[k]; }
+
+// ─── INIT & LOCAL STORAGE ─────────────────────────────
+window.onload = () => {
+  document.getElementById('ptDate').value = new Date().toISOString().split('T')[0];
+  buildLN();
+  ALL_KEYS.forEach(k => gs(k));
+  
+  // 페이지 로드 시 임시 저장 데이터 불러오기
+  loadDraft();
+};
+
+function saveDraft() {
+  const draft = {
+    ptName: document.getElementById('ptName').value,
+    ptSpecies: document.getElementById('ptSpecies').value,
+    ptDate: document.getElementById('ptDate').value,
+    S: S
+  };
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(draft));
+}
+
+function loadDraft() {
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if(!raw) return;
+  try {
+    const data = JSON.parse(raw);
+    
+    // 환자 정보 복구
+    if(data.ptName) document.getElementById('ptName').value = data.ptName;
+    if(data.ptDate) document.getElementById('ptDate').value = data.ptDate;
+    if(data.ptSpecies) {
+      document.getElementById('ptSpecies').value = data.ptSpecies;
+      onSpecies();
+    }
+
+    // 상태(S) 복구 및 시각적 UI 복구
+    if(data.S) {
+      Object.assign(S, data.S);
+      
+      // 1. 메모 및 숫자 입력창 복구
+      ['temp','hr','rr','bp'].forEach(k => {
+        if(!S[k] || S[k].value === null) return;
+        const el = document.getElementById(k==='temp'?'i-temp':k==='bp'?'i-bp':'i-'+k+'15');
+        if(el) {
+            el.value = (k==='hr'||k==='rr') ? S[k].per15 : S[k].value;
+            if(k==='temp') handleTemp(el, true);
+            else if(k==='bp') handleBP(el, true);
+            else handleRate(k, el, true);
+        }
+      });
+
+      document.querySelectorAll('.mi').forEach(el => {
+        const k = el.id.replace('m-','');
+        if(S[k] && S[k].memo) el.value = S[k].memo;
+      });
+
+      // 2. 버튼 및 칩 UI 시각적 복구
+      ALL_KEYS.forEach(k => {
+        if(!S[k]) return;
+        const val = S[k].value;
+        const findings = S[k].findings || [];
+
+        // Toggle buttons
+        const tg = document.getElementById('tg-' + k);
+        if(tg && val) {
+            tg.querySelectorAll('.tog').forEach(b => {
+                if(b.textContent.trim() === val) {
+                    const isNorm = NORM_VALS.has(val);
+                    b.className = isNorm ? 'tog sn' : 'tog sa';
+                    
+                    if(k === 'murmur' && val === '있음') {
+                        document.getElementById('murmur-grade').style.display = 'flex';
+                        if(S[k].grade) {
+                            document.querySelectorAll('.gb').forEach(gb => {
+                                if(gb.textContent == S[k].grade) gb.className = 'gb gs';
+                            });
+                        }
+                    }
+                }
+            });
+        }
+
+        // Chip buttons
+        const fw = document.getElementById('fw-' + k);
+        if(fw && findings.length > 0) {
+            fw.querySelectorAll('.chip').forEach(c => {
+                const txt = c.textContent.trim();
+                if(findings.includes(txt)) {
+                    c.querySelector('input').checked = true;
+                    if (txt === '정상' || txt === '이상 없음') c.className = 'chip cn';
+                    else if (txt.includes('기타') || txt.includes('장액성') || txt.includes('일측성') || txt.includes('인설') || txt.includes('과색소') || txt.includes('포피 분비물') || txt.includes('외음부 분비물') || txt.includes('방광 팽만') || txt.includes('치석 G1') || txt.includes('치석 G2')) c.className = 'chip ct'; 
+                    else c.className = 'chip ca';
+                }
+            });
+        }
+
+        // Special UI (BCS, MCS, Hydration)
+        if(k === 'bcs' && val) {
+            const btn = document.getElementById('bcs' + val);
+            if(btn) btn.style.cssText += 'outline:2px solid var(--primary);outline-offset:1px;';
+            document.getElementById('bcs-lbl').textContent = val + ' / 9';
+        }
+        if(k === 'mcs' && val) {
+            document.querySelectorAll('.mcs-opt').forEach(o => {
+                if(o.querySelector('.mcs-g').textContent.trim() === val) {
+                    o.className = val === '정상' ? 'mcs-opt mn' : 'mcs-opt ma';
+                }
+            });
+        }
+        if(k === 'hydration' && val) {
+            document.querySelectorAll('.hyd-opt').forEach(o => {
+                if(o.querySelector('.hyd-g').textContent.trim() === val) {
+                    o.className = val === '정상' ? 'hyd-opt hn' : 'hyd-opt ha';
+                }
+            });
+        }
+
+        // 마킹 및 진행도 업데이트
+        let state = 't';
+        if(isAbn(k)) state = 'a';
+        else if (val === '정상' || val === '없음' || val === '이상 없음' || findings.includes('정상')) state = 'n';
+        if(hasVal(k)) markRow(k, state);
+      });
+      tick();
+    }
+  } catch(e) {
+    console.error('Draft load error', e);
+  }
+}
+
+function buildLN(){
+  const t = document.getElementById('ln-table');
+  t.innerHTML = '';
+  LN_KEYS.forEach((k,i) => {
+    gs(k);
+    const r = document.createElement('div');
+    r.className = 'ln-row';
+    r.innerHTML = `<span class="ln-name">${LN_FULL[i]}</span>
+      <div class="tg" id="tg-${k}">
+        <button class="tog" onclick="T('${k}',this,'정상',1)">정상</button>
+        <button class="tog" onclick="T('${k}',this,'비대',0)">비대</button>
+        <button class="tog" onclick="T('${k}',this,'통증',0)">통증</button>
+      </div>`;
+    t.appendChild(r);
+  });
+}
+
+// ─── HANDLERS ─────────────────────────────────────────
+function T(key, btn, val, isNorm){
+  gs(key);
+  btn.parentElement.querySelectorAll('.tog').forEach(b => b.className='tog');
+  btn.className = isNorm ? 'tog sn' : 'tog sa';
+  S[key].value = val;
+  markRow(key, isNorm ? 'n' : 'a');
+  tick();
+  saveDraft(); // 실시간 저장
+}
+
+function C(key, chip, val, type){
+  gs(key);
+  const fw = chip.closest('.fw') || chip.parentElement;
+  const cb = chip.querySelector('input');
+  if(type === 'n'){
+    fw.querySelectorAll('.chip').forEach(c=>{c.className='chip';c.querySelector('input').checked=false;});
+    cb.checked = true; chip.className='chip cn';
+    S[key].findings=[val]; S[key].value='정상';
+  } else {
+    fw.querySelectorAll('.chip').forEach(c=>{
+      if([...c.classList].includes('cn')){c.className='chip';c.querySelector('input').checked=false;}
+    });
+    cb.checked = !cb.checked;
+    if(cb.checked) chip.className = type==='a'?'chip ca':'chip ct';
+    else chip.className='chip';
+    const checked=[];
+    fw.querySelectorAll('.chip input:checked').forEach(i=>checked.push(i.closest('.chip').textContent.trim()));
+    S[key].findings=checked; S[key].value=checked.length?checked.join(', '):null;
+  }
+  
+  const hasAbn = S[key].findings.some(f=>{
+    const c2=[...fw.querySelectorAll('.chip')].find(c=>c.textContent.trim()===f);
+    return c2&&c2.classList.contains('ca');
+  });
+  markRow(key, S[key].value==='정상'||S[key].value==='이상 없음'?'n':hasAbn?'a':'t');
+  tick();
+
+  // [기능 추가] '기타' 항목 선택 시 바로 메모창에 포커스
+  if (cb.checked && val === '기타') {
+    const memoEl = document.getElementById('m-' + key);
+    if(memoEl) {
+        setTimeout(() => memoEl.focus(), 50); // UI 업데이트 직후 커서 이동
+    }
+  }
+
+  saveDraft(); // 실시간 저장
+}
+
+function handleTemp(inp, skipSave = false){
+  const val=parseFloat(inp.value);
+  gs('temp').value = isNaN(val)?null:val;
+  const lo=species==='cat'?38.0:37.5, hi=species==='cat'?39.2:39.2;
+  if(!isNaN(val)){
+    inp.className=(val<lo||val>hi)?'ni va':'ni vn';
+    markRow('temp',(val<lo||val>hi)?'a':'n');
+  } else { inp.className='ni'; markRow('temp',null); }
+  tick();
+  if(!skipSave) saveDraft();
+}
+
+function handleRate(key,inp, skipSave = false){
+  const p15=parseInt(inp.value);
+  if(isNaN(p15)||inp.value===''){
+    gs(key).value=null; gs(key).per15=null;
+    document.getElementById('c-'+key).textContent='—'; inp.className='ni'; markRow(key,null); tick(); 
+    if(!skipSave) saveDraft();
+    return;
+  }
+  const pm=p15*4; gs(key).value=pm; gs(key).per15=p15;
+  document.getElementById('c-'+key).textContent=pm;
+  let abn=false;
+  if(key==='hr'){ const lo=species==='cat'?160:60,hi=species==='cat'?240:140; abn=pm<lo||pm>hi; }
+  else { abn=pm<15||pm>30; }
+  inp.className=abn?'ni va':'ni vn'; markRow(key,abn?'a':'n'); tick();
+  if(!skipSave) saveDraft();
+}
+
+function handleBP(inp, skipSave = false){
+  const val=parseInt(inp.value);
+  gs('bp').value = isNaN(val)?null:val;
+  if(!isNaN(val)){
+    inp.className=(val<90||val>160)?'ni va':'ni vn';
+    markRow('bp',(val<90||val>160)?'a':'n');
+  } else { inp.className='ni'; markRow('bp',null); }
+  tick();
+  if(!skipSave) saveDraft();
+}
+
+function selMurmur(btn,val){
+  btn.parentElement.querySelectorAll('.tog').forEach(b=>b.className='tog');
+  const isNorm=val==='없음';
+  btn.className=isNorm?'tog sn':'tog sa';
+  gs('murmur').value=val;
+  document.getElementById('murmur-grade').style.display=isNorm?'none':'flex';
+  markRow('murmur',isNorm?'n':'a'); tick();
+  saveDraft();
+}
+function selGrade(btn,n){
+  document.querySelectorAll('.gb').forEach(b=>b.className='gb');
+  btn.className='gb gs'; gs('murmur').grade=n;
+  saveDraft();
+}
+
+function selBCS(n){
+  document.querySelectorAll('.bcs-b').forEach(b=>b.style.outline='');
+  document.getElementById('bcs'+n).style.cssText+='outline:2px solid var(--primary);outline-offset:1px;';
+  document.getElementById('bcs-lbl').textContent=n+' / 9';
+  gs('bcs').value=n;
+  markRow('bcs',(n>=4&&n<=5)?'n':'a'); tick();
+  saveDraft();
+}
+function selMCS(el,val){
+  document.querySelectorAll('.mcs-opt').forEach(o=>o.className='mcs-opt');
+  el.className=val==='정상'?'mcs-opt mn':'mcs-opt ma';
+  gs('mcs').value=val; markRow('mcs',val==='정상'?'n':'a'); tick();
+  saveDraft();
+}
+function selHyd(el,val){
+  document.querySelectorAll('.hyd-opt').forEach(o=>o.className='hyd-opt');
+  el.className=val==='정상'?'hyd-opt hn':'hyd-opt ha';
+  gs('hydration').value=val; markRow('hydration',val==='정상'?'n':'a'); tick();
+  saveDraft();
+}
+
+const ROW_MAP={
+  temp:'r-temp',hr:'r-hr',rr:'r-rr',bp:'r-bp',resp_effort:'r-resp_effort',lungs:'r-lungs',
+  heart_rhythm:'r-heart_rhythm',murmur:'r-murmur',
+  mm_color:'r-mm_color',mm_moist:'r-mm_moist',crt:'r-crt',
+  bcs:'r-bcs',mcs:'r-mcs',hydration:'r-hydration',
+  eyes:'r-eyes',ears:'r-ears',nose:'r-nose',oral:'r-oral',
+  neck_pain:'r-neck_pain',neck_rom:'r-neck_rom',
+  abd_tension:'r-abd_tension',abd_pain:'r-abd_pain',abd_findings:'r-abd_findings',
+  haircoat:'r-haircoat',skin:'r-skin',masses_yn:'r-masses_yn',repro:'r-repro',
+  mentation:'r-mentation',posture:'r-posture',
+};
+LN_KEYS.forEach(k=>{ ROW_MAP[k]='r-ln'; });
+
+function markRow(key,state){
+  const id=ROW_MAP[key]; if(!id) return;
+  const row=document.getElementById(id); if(!row) return;
+  row.classList.remove('r-abn','r-noted');
+  if(state==='a') row.classList.add('r-abn');
+  else if(state==='t') row.classList.add('r-noted');
+}
+
+function hasVal(k){
+  const s=S[k]; if(!s) return false;
+  return (s.value!==null&&s.value!=='') || (s.findings&&s.findings.length>0) || (s.memo&&s.memo.trim());
+}
+const NORM_VALS=new Set(['정상','없음','BAR','QAR','핑크','촉촉','1-2sec','규칙','이상 없음']);
+function isAbn(k){
+  const s=S[k]; if(!s||!hasVal(k)) return false;
+  if(k==='bcs') return typeof s.value==='number'&&(s.value<4||s.value>5);
+  if(typeof s.value==='string' && NORM_VALS.has(s.value)) return false;
+  if(s.findings&&s.findings.length===1&&(s.findings[0]==='정상'||s.findings[0]==='이상 없음')) return false;
+  return true;
+}
+
+function tick(){
+  Object.entries(SEC_KEYS).forEach(([sec,keys])=>{
+    const tot=keys.length, fil=keys.filter(hasVal).length, bad=keys.some(isAbn);
+    const b=document.getElementById('b-'+sec); if(!b) return;
+    if(!fil){ b.textContent='—'; b.className='sc-badge'; }
+    else if(bad){ b.textContent=fil+'/'+tot; b.className='sc-badge abn'; }
+    else if(fil===tot){ b.textContent='완료'; b.className='sc-badge done'; }
+    else { b.textContent=fil+'/'+tot; b.className='sc-badge'; }
+  });
+  const filled=ALL_KEYS.filter(hasVal).length;
+  document.getElementById('progText').textContent=filled+' 항목';
+  document.getElementById('progFill').style.width=Math.min(Math.round(filled/ALL_KEYS.length*100),100)+'%';
+  document.getElementById('botStat').textContent=filled+'개 항목 입력됨';
+}
+
+function onSpecies(){
+  species=document.getElementById('ptSpecies').value;
+  const hr=document.getElementById('ref-hr'),tm=document.getElementById('ref-temp');
+  if(hr) hr.textContent=species==='cat'?'고양이 160–240 bpm':species==='dog'?'개 60–140 bpm':'개 60–140 / 고양이 160–240';
+  if(tm) tm.textContent=species==='cat'?'고양이 38.0–39.2 °C':species==='dog'?'개 37.5–39.2 °C':'개 37.5–39.2 / 고양이 38.0–39.2';
+}
+
+// ─── EMR TEXT GENERATOR ──────────────────────────────
+function buildText(){
+  const name=document.getElementById('ptName').value||'—';
+  const sp=species==='dog'?'개':species==='cat'?'고양이':'—';
+  const dt=document.getElementById('ptDate').value||'—';
+
+  const v=k=>S[k]?.value??null;
+  const f=k=>{
+    let fi=S[k]?.findings || [];
+    let memo=S[k]?.memo?.trim();
+    if(fi.includes('기타') && memo) {
+      fi = fi.filter(x => x !== '기타');
+      fi.push(memo);
+    }
+    return fi.length?fi.join(', '):null;
+  };
+  const m=k=>S[k]?.memo?.trim()||null;
+  const vf=k=>f(k)||v(k);
+
+  const lines=[];
+  lines.push('[신체검사] '+dt+' / '+name+' ('+sp+')');
+  lines.push('');
+
+  const tV = v('temp') ? S['temp'].value + '°C' : '—';
+  const hV = v('hr') ? v('hr') + 'bpm' : '—';
+  const rV = v('rr') ? v('rr') + '/min' : '—';
+  const bV = v('bp') ? v('bp') + 'mmHg' : '—';
+  lines.push(`◎ V/S: T ${tV}, HR ${hV}, RR ${rV}, BP ${bV}`);
+
+  if(v('mentation') && !['BAR','QAR'].includes(v('mentation'))) lines.push('  Mentation: '+v('mentation'));
+  if(v('posture') && v('posture')!=='정상') lines.push('  자세/보행: '+v('posture'));
+
+  const mmC = v('mm_color') || '핑크(정상)';
+  const mmM = v('mm_moist') || '촉촉(정상)';
+  const crtV = v('crt') || '1-2sec(정상)';
+  lines.push(`◎ MM/CRT: 점막색(${mmC}), 습도(${mmM}), CRT(${crtV})`);
+
+  const cvParts=[];
+  if(v('heart_rhythm')&&v('heart_rhythm')!=='규칙') cvParts.push('리듬 '+v('heart_rhythm'));
+  const murmurStr = v('murmur')==='있음' ? '심잡음+'+(S['murmur']?.grade?' G'+S['murmur'].grade:'') : null;
+  if(murmurStr) cvParts.push(murmurStr);
+  if(cvParts.length) lines.push('◎ CV: '+cvParts.join(', '));
+
+  const bodyParts=[];
+  if(v('bcs')) bodyParts.push('BCS '+v('bcs')+'/9');
+  if(v('mcs')&&v('mcs')!=='정상') bodyParts.push('MCS '+v('mcs'));
+  if(v('hydration')&&v('hydration')!=='정상') bodyParts.push('탈수 '+v('hydration'));
+  if(bodyParts.length) lines.push('◎ 체형/수화: '+bodyParts.join(', '));
+
+  if(v('resp_effort')&&v('resp_effort')!=='정상') lines.push('◎ 호흡노력: '+v('resp_effort'));
+  if(vf('lungs')&&vf('lungs')!=='정상'){
+    lines.push('◎ 폐 청진: '+vf('lungs')+(m('lungs')?' ('+m('lungs')+')':''));
+  }
+
+  const headLines=[];
+  if(vf('eyes')&&vf('eyes')!=='정상') headLines.push('눈: '+vf('eyes'));
+  if(vf('ears')&&vf('ears')!=='정상') headLines.push('귀: '+vf('ears'));
+  if(vf('nose')&&vf('nose')!=='정상') headLines.push('코: '+vf('nose'));
+  if(vf('oral')&&vf('oral')!=='정상') headLines.push('구강: '+vf('oral'));
+  if(headLines.length) lines.push('◎ 두부: ' + headLines.join(' | '));
+
+  if(v('neck_pain')&&v('neck_pain')!=='없음') lines.push('◎ 경추통증: '+v('neck_pain'));
+  
+  const lnAbn=LN_KEYS.map((k,i)=>{
+    const val=v(k); if(!val||val==='정상') return null;
+    return LN_SHORT[i]+'('+val+')';
+  }).filter(Boolean);
+  if(lnAbn.length) lines.push('◎ 림프절: '+lnAbn.join(', '));
+
+  const abdParts=[];
+  if(v('abd_tension')&&v('abd_tension')!=='정상') abdParts.push(v('abd_tension'));
+  if(v('abd_pain')&&v('abd_pain')!=='없음') abdParts.push('복통('+v('abd_pain')+')');
+  const abdF=vf('abd_findings');
+  if(abdF&&abdF!=='이상 없음') abdParts.push(abdF+(m('abd_findings')?' ('+m('abd_findings')+')':''));
+  if(abdParts.length) lines.push('◎ 복부: '+abdParts.join(', '));
+
+  if(vf('skin')&&vf('skin')!=='정상') lines.push('◎ 피부/피모: '+vf('skin'));
+  if(v('masses_yn')==='있음') lines.push('◎ 종괴: '+(m('masses_detail')||'상세내용 없음'));
+  if(vf('repro')&&vf('repro')!=='정상') lines.push('◎ 생식기: '+vf('repro'));
+
+  if(lines.length<=4) lines.push('\n※ 그 외 특이소견 없음');
+
+  return lines.join('\n');
+}
+
+// ─── MODAL ────────────────────────────────────────────
+function openModal(){
+  document.getElementById('modalTA').value=buildText();
+  document.getElementById('sendRes').style.display='none';
+  document.getElementById('modal').classList.add('open');
+}
+function closeModal(){ document.getElementById('modal').classList.remove('open'); }
+function copyText(){
+  const ta=document.getElementById('modalTA'); ta.select(); document.execCommand('copy');
+  const b=event.target; b.textContent='복사됨 ✓'; setTimeout(()=>b.textContent='클립보드 복사',1500);
+}
+
+// ─── SLACK SEND ───────────────────────────────────────
+async function sendToSlack(){
+  if(!document.getElementById('modal').classList.contains('open')){ openModal(); return; }
+  const text=buildText();
+  const s=document.getElementById('sendBtn'),ms=document.getElementById('modalSendBtn'),res=document.getElementById('sendRes');
+  [s,ms].forEach(b=>{if(b)b.classList.add('btn-sending');});
+  try {
+    const r=await fetch(WORKER_URL,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({text}),
+    });
+    if(r.ok){
+      res.textContent='✓ Slack 전송 완료'; res.className='send-res ok'; res.style.display='block';
+      setTimeout(()=>{res.style.display='none';},3000);
+    } else {
+      throw new Error('HTTP '+r.status);
+    }
+  } catch(e){
+    res.textContent='전송 실패: '+e.message; res.className='send-res err'; res.style.display='block';
+  } finally {
+    [s,ms].forEach(b=>{if(b)b.classList.remove('btn-sending');});
+  }
+}
+
+// ─── RESET ────────────────────────────────────────────
+function resetAll(){
+  if(!confirm('모든 입력을 초기화하시겠습니까?')) return;
+  
+  // LocalStorage 데이터 삭제
+  localStorage.removeItem(STORAGE_KEY);
+
+  ALL_KEYS.forEach(k=>{S[k]={value:null,memo:'',findings:[],grade:null,per15:null};});
+  document.getElementById('ptName').value = '';
+  document.getElementById('ptSpecies').value = '';
+  document.querySelectorAll('.tog').forEach(b=>b.className='tog');
+  document.querySelectorAll('.chip').forEach(c=>{c.className='chip';c.querySelector('input').checked=false;});
+  document.querySelectorAll('.mcs-opt').forEach(o=>o.className='mcs-opt');
+  document.querySelectorAll('.hyd-opt').forEach(o=>o.className='hyd-opt');
+  document.querySelectorAll('.bcs-b').forEach(b=>b.style.outline='');
+  document.querySelectorAll('.ni').forEach(i=>{i.value='';i.className='ni';});
+  document.querySelectorAll('.mi').forEach(t=>t.value='');
+  document.getElementById('bcs-lbl').textContent='— / 9';
+  document.getElementById('c-hr').textContent='—';
+  document.getElementById('c-rr').textContent='—';
+  document.getElementById('murmur-grade').style.display='none';
+  document.querySelectorAll('.er').forEach(r=>r.classList.remove('r-abn','r-noted'));
+  document.querySelectorAll('.sc-badge').forEach(b=>{b.textContent='—';b.className='sc-badge';});
+  document.getElementById('progFill').style.width='0%';
+  document.getElementById('progText').textContent='0 항목';
+  document.getElementById('botStat').textContent='입력 대기';
+  document.getElementById('ptDate').value=new Date().toISOString().split('T')[0];
+  onSpecies();
+}
+
+document.addEventListener('input',e=>{
+  if(e.target.classList.contains('mi')){
+    const key=e.target.id.replace('m-','');
+    if(key) { gs(key).memo=e.target.value; tick(); saveDraft(); }
+  }
+});
+</script>
+</body>
+</html>
