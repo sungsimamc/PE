@@ -89,21 +89,21 @@
         </div>
       </div>
       
-      <div class="er" style="grid-template-columns: 1fr 1fr; gap: 10px;">
+      <div class="er" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; align-items: start;">
         <div class="pt-field">
-          <label>용량 (mg/kg 또는 ug/kg)</label>
-          <input type="number" id="dosage" step="0.001" placeholder="0.0">
+          <label>용량 (mg/kg, ug/kg)</label>
+          <input type="number" id="dosage" step="0.001" placeholder="0.0" style="width: 100%;">
         </div>
         <div class="pt-field">
-          <label>역가 (mg/T 또는 ug/T)</label>
-          <input type="number" id="potency" step="0.001" placeholder="0.0">
+          <label>역가 (mg/T, ug/T)</label>
+          <input type="number" id="potency" step="0.001" placeholder="0.0" style="width: 100%;">
         </div>
       </div>
 
-      <div class="er" style="grid-template-columns: 1fr 1fr; gap: 10px;">
+      <div class="er" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; align-items: start;">
         <div class="pt-field">
           <label>투약 횟수</label>
-          <select id="freq" onchange="toggleTiming()">
+          <select id="freq" onchange="toggleTiming()" style="width: 100%;">
             <option value="BID">BID (1일 2회)</option>
             <option value="SID">SID (1일 1회)</option>
             <option value="TID">TID (1일 3회)</option>
@@ -111,7 +111,7 @@
         </div>
         <div class="pt-field" id="timingContainer" style="display:none;">
           <label>SID 타이밍</label>
-          <select id="timing">
+          <select id="timing" style="width: 100%;">
             <option value="오전">오전</option>
             <option value="오후">오후</option>
             <option value="저녁">저녁</option>
@@ -168,7 +168,6 @@ drugSearchInput.addEventListener('input', function() {
       return;
     }
 
-    // DRUG_DB는 drugs.js에서 불러옵니다.
     const filtered = DRUG_DB.filter(d => d.name.toLowerCase().includes(val));
     
     if(filtered.length > 0) {
@@ -191,7 +190,6 @@ drugSearchInput.addEventListener('input', function() {
     }
 });
 
-// 외부 클릭 시 자동완성 닫기
 document.addEventListener('click', function(e) {
     if (e.target !== drugSearchInput) suggestionBox.style.display = 'none';
 });
@@ -200,6 +198,7 @@ document.addEventListener('click', function(e) {
 function toggleTiming() {
     const freq = document.getElementById('freq').value;
     const container = document.getElementById('timingContainer');
+    // .pt-field 구조를 유지하기 위해 block 대신 flex 사용
     container.style.display = (freq === 'SID') ? 'flex' : 'none';
 }
 
@@ -225,7 +224,6 @@ function addDrug() {
 
     prescribedDrugs.push({ name, dosage, potency, freq, timing });
     
-    // 입력창 초기화
     drugSearchInput.value = "";
     document.getElementById('dosage').value = "";
     document.getElementById('potency').value = "";
@@ -246,13 +244,13 @@ function clearAll() {
     }
 }
 
-// 3. 핵심: 계산 로직 (수정된 반올림/올림 규칙 적용)
+// 3. 핵심: 계산 로직
 function calculateFinalQty(rawQty) {
     const step = 0.25;
-    const base = Math.floor(rawQty / step) * step; // 하위 0.25 단위
-    const remainder = rawQty - base; // 0.25 단위에서 초과한 자투리 양
+    const base = Math.floor(rawQty / step) * step; 
+    const remainder = rawQty - base; 
     
-    // 요청사항: 0.25 단위에서 오차가 0.05 이하면 내림(base 유지), 초과하면 0.25 올림
+    // 오차가 0.05 이하면 내림(base 유지), 초과하면 0.25 올림
     if (remainder <= 0.05) {
         return base;
     } else {
@@ -270,7 +268,6 @@ function render() {
     const outputDiv = document.getElementById('outputText');
     const badge = document.getElementById('syncBadge');
 
-    // 통계 업데이트
     document.getElementById('rxCount').textContent = prescribedDrugs.length + '개 약물';
 
     if (prescribedDrugs.length === 0) {
@@ -280,22 +277,17 @@ function render() {
         return;
     }
 
-    // SID 존재 여부에 따른 동기화 뱃지
     const hasSid = prescribedDrugs.some(d => d.freq === 'SID');
     if (hasSid) badge.classList.add('show');
     else badge.classList.remove('show');
     
     let listHtml = "";
-    
-    // 텍스트 출력 헤더 작성
     let textOutput = ptName ? `[처방전] ${ptName} / ${weight}kg\n` : `${weight}kg\n`;
 
-    // 약물 리스트 계산 및 렌더링
     prescribedDrugs.forEach((drug, index) => {
-        const unitT = (weight * drug.dosage) / drug.potency; // 1회 투여량 (T)
+        const unitT = (weight * drug.dosage) / drug.potency; 
         let multiplier;
         
-        // 기존 원본 로직: SID가 하나라도 있으면 전체 약물의 곱셈을 days로 통일함
         if (hasSid) {
             multiplier = days;
         } else {
@@ -307,7 +299,6 @@ function render() {
         const finalQty = calculateFinalQty(totalRaw);
         const unit = drug.name.includes('(ug)') ? 'ug' : 'mg';
 
-        // HTML 리스트 추가
         listHtml += `
             <div class="rx-item">
                 <div class="rx-item-top">
@@ -327,7 +318,6 @@ function render() {
             </div>
         `;
         
-        // 텍스트 출력 추가
         textOutput += `${drug.name} ${drug.dosage}${unit}/kg ${drug.freq} ${drug.timing ? drug.timing + ' ' : ''}${finalQty}T/${drug.potency}${unit}\n`;
     });
 
@@ -359,7 +349,6 @@ async function sendToSlack() {
     document.getElementById('botStat').textContent = '전송 중...';
 
     try {
-        // api.js의 공통 함수 사용. 처방전이므로 'rx' 타입 지정
         await sendToSlackAPI('rx', text);
         document.getElementById('botStat').textContent = '✓ Slack 전송 완료';
         setTimeout(() => document.getElementById('botStat').textContent = '대기 중', 3000);
