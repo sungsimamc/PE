@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>처방전 발행 — 성심동물의료센터 EMR</title>
+
+<link rel="stylesheet" href="../css/common.css">
+<script src="../js/api.js"></script>
+<script src="../js/drugs.js"></script>
+
+<style>
+/* 자동완성 검색창 전용 스타일 (공통 CSS 외 처방전 모듈 전용) */
+.ac-wrap { position: relative; width: 100%; }
+.ac-list {
+  position: absolute; top: 100%; left: 0; right: 0; z-index: 99;
+  background: var(--canvas); border: 1px solid var(--hairline-dark);
+  max-height: 200px; overflow-y: auto; border-radius: var(--rb);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1); display: none; margin-top: 4px;
+}
+.ac-item { padding: 10px 12px; font-size: 13px; cursor: pointer; border-bottom: 1px solid var(--hairline); }
+.ac-item:last-child { border-bottom: none; }
+.ac-item:hover { background: var(--surface-soft); color: var(--primary); }
+.ac-item strong { color: var(--ink); }
+
+/* 처방 목록 리스트업 스타일 */
+.rx-item {
+  background: var(--surface-soft); border: 1px solid var(--hairline);
+  border-radius: var(--r); padding: 12px; margin-bottom: 8px;
+}
+.rx-item-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+.rx-name { font-size: 13px; font-weight: 600; color: var(--ink); }
+.rx-detail { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.rx-calc {
+  background: var(--canvas); border: 1px dashed var(--hairline-dark); border-radius: 4px;
+  padding: 6px 8px; font-family: var(--mono); font-size: 11px; color: var(--muted);
+  display: flex; justify-content: space-between;
+}
+.rx-calc strong { color: var(--primary); }
+.del-btn { color: var(--muted); cursor: pointer; background: none; border: none; font-size: 16px; line-height: 1; padding: 0 4px; }
+.del-btn:hover { color: var(--alert); }
+
+/* 상태 뱃지 */
+.badge-sync { font-size: 10px; background: #FFF4E5; border: 1px solid #FFE0B2; color: #E65100; padding: 2px 6px; border-radius: 4px; display: none; }
+.badge-sync.show { display: inline-block; }
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <a href="../index.html" class="hdr-left">
+    <img src="../로고_사진.png" alt="성심동물의료센터" class="hdr-logo">
+    <div class="hdr-div"></div>
+    <span class="hdr-title">〈 뒤로 (홈) | 처방전 발행</span>
+  </a>
+  <div class="hdr-right">
+    <span class="prog-text" id="rxCount">0개 약물</span>
+  </div>
+</header>
+
+<div class="page">
+  <div class="pt-bar">
+    <span class="pt-label">기본 정보</span>
+    <div class="pt-field">
+      <label>환자명 (선택)</label>
+      <input type="text" id="ptName" placeholder="환자명" autocomplete="off" style="min-width:70px;">
+    </div>
+    <div class="pt-field">
+      <label>체중 (kg)</label>
+      <input type="number" id="weight" step="0.01" placeholder="0.00" oninput="render()" style="width:70px;">
+    </div>
+    <div class="pt-field">
+      <label>처방 일수</label>
+      <input type="number" id="days" placeholder="0" oninput="render()" style="width:70px;">
+    </div>
+  </div>
+
+  <div class="sc">
+    <div class="sc-hdr">
+      <div class="sc-bar"></div>
+      <div><div class="sc-tt">약물 추가</div><div class="sc-sub">Add Prescription</div></div>
+    </div>
+    <div class="sc-body">
+      <div class="er">
+        <div><div class="el">약물 검색</div><div class="es">이름 입력</div></div>
+        <div class="ec ac-wrap">
+          <input type="text" class="mi" id="drugSearch" placeholder="약물명 검색 (예: AMC, Pimo...)" autocomplete="off">
+          <div id="suggestionBox" class="ac-list"></div>
+        </div>
+      </div>
+      
+      <div class="er" style="grid-template-columns: 1fr 1fr; gap: 10px;">
+        <div class="pt-field">
+          <label>용량 (mg/kg 또는 ug/kg)</label>
+          <input type="number" id="dosage" step="0.001" placeholder="0.0">
+        </div>
+        <div class="pt-field">
+          <label>역가 (mg/T 또는 ug/T)</label>
+          <input type="number" id="potency" step="0.001" placeholder="0.0">
+        </div>
+      </div>
+
+      <div class="er" style="grid-template-columns: 1fr 1fr; gap: 10px;">
+        <div class="pt-field">
+          <label>투약 횟수</label>
+          <select id="freq" onchange="toggleTiming()">
+            <option value="BID">BID (1일 2회)</option>
+            <option value="SID">SID (1일 1회)</option>
+            <option value="TID">TID (1일 3회)</option>
+          </select>
+        </div>
+        <div class="pt-field" id="timingContainer" style="display:none;">
+          <label>SID 타이밍</label>
+          <select id="timing">
+            <option value="오전">오전</option>
+            <option value="오후">오후</option>
+            <option value="저녁">저녁</option>
+          </select>
+        </div>
+      </div>
+
+      <button class="btn btn-p" style="margin-top:4px;" onclick="addDrug()">+ 처방 리스트에 추가</button>
+    </div>
+  </div>
+
+  <div class="sc">
+    <div class="sc-hdr">
+      <div class="sc-bar" style="background:var(--ink);"></div>
+      <div><div class="sc-tt">처방 목록 및 결과</div><div class="sc-sub">Preview & Output</div></div>
+      <span id="syncBadge" class="badge-sync">SID 동기화 적용됨</span>
+    </div>
+    
+    <div class="sc-body">
+      <div id="drugList" style="min-height:80px; max-height:280px; overflow-y:auto;">
+        <div style="text-align:center; padding:30px 0; color:var(--muted); font-size:12px;">처방된 약물이 없습니다.</div>
+      </div>
+      
+      <div style="margin-top:10px; border-top:1px solid var(--hairline); padding-top:14px;">
+        <div style="font-size:11px; font-weight:600; color:var(--muted); margin-bottom:6px;">출력 텍스트 (EMR/Slack용)</div>
+        <textarea id="outputText" class="mi" style="height:120px; font-family:var(--mono);" readonly></textarea>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="bot">
+  <span class="bot-stat" id="botStat">대기 중</span>
+  <div class="btn-row">
+    <button class="btn btn-ghost btn-d" onclick="clearAll()">전체 삭제</button>
+    <button class="btn btn-ghost" onclick="copyToClipboard()">복사</button>
+    <button class="btn btn-p" id="sendBtn" onclick="sendToSlack()">Slack 전송</button>
+  </div>
+</div>
+
+<script>
+let prescribedDrugs = [];
+
+// 1. 자동완성 기능 설정
+const drugSearchInput = document.getElementById('drugSearch');
+const suggestionBox = document.getElementById('suggestionBox');
+
+drugSearchInput.addEventListener('input', function() {
+    const val = this.value.toLowerCase();
+    suggestionBox.innerHTML = '';
+    
+    if (!val) {
+      suggestionBox.style.display = 'none';
+      return;
+    }
+
+    // DRUG_DB는 drugs.js에서 불러옵니다.
+    const filtered = DRUG_DB.filter(d => d.name.toLowerCase().includes(val));
+    
+    if(filtered.length > 0) {
+      suggestionBox.style.display = 'block';
+      filtered.slice(0, 10).forEach(drug => {
+          const div = document.createElement('div');
+          div.className = 'ac-item';
+          const unit = drug.name.includes('(ug)') ? 'ug' : 'mg';
+          div.innerHTML = `<strong>${drug.name}</strong> (${drug.potency}${unit})`;
+          
+          div.addEventListener('click', function() {
+              drugSearchInput.value = drug.name;
+              document.getElementById('potency').value = drug.potency;
+              suggestionBox.style.display = 'none';
+          });
+          suggestionBox.appendChild(div);
+      });
+    } else {
+      suggestionBox.style.display = 'none';
+    }
+});
+
+// 외부 클릭 시 자동완성 닫기
+document.addEventListener('click', function(e) {
+    if (e.target !== drugSearchInput) suggestionBox.style.display = 'none';
+});
+
+// 2. 입력 UI 제어
+function toggleTiming() {
+    const freq = document.getElementById('freq').value;
+    const container = document.getElementById('timingContainer');
+    container.style.display = (freq === 'SID') ? 'flex' : 'none';
+}
+
+function addDrug() {
+    const weight = parseFloat(document.getElementById('weight').value);
+    const days = parseInt(document.getElementById('days').value);
+    
+    if (!weight || !days) {
+        alert("상단의 '체중'과 '처방 일수'를 먼저 입력해주세요.");
+        return;
+    }
+
+    const name = drugSearchInput.value;
+    const dosage = parseFloat(document.getElementById('dosage').value);
+    const potency = parseFloat(document.getElementById('potency').value);
+    const freq = document.getElementById('freq').value;
+    const timing = freq === 'SID' ? document.getElementById('timing').value : "";
+
+    if (!name || isNaN(dosage) || isNaN(potency)) {
+        alert("약물 이름, 용량, 역가를 정확히 입력해주세요.");
+        return;
+    }
+
+    prescribedDrugs.push({ name, dosage, potency, freq, timing });
+    
+    // 입력창 초기화
+    drugSearchInput.value = "";
+    document.getElementById('dosage').value = "";
+    document.getElementById('potency').value = "";
+    drugSearchInput.focus();
+    
+    render();
+}
+
+function removeDrug(index) {
+    prescribedDrugs.splice(index, 1);
+    render();
+}
+
+function clearAll() {
+    if (confirm("모든 처방 목록을 초기화하시겠습니까?")) {
+        prescribedDrugs = [];
+        render();
+    }
+}
+
+// 3. 핵심: 계산 로직 (수정된 반올림/올림 규칙 적용)
+function calculateFinalQty(rawQty) {
+    const step = 0.25;
+    const base = Math.floor(rawQty / step) * step; // 하위 0.25 단위
+    const remainder = rawQty - base; // 0.25 단위에서 초과한 자투리 양
+    
+    // 요청사항: 0.25 단위에서 오차가 0.05 이하면 내림(base 유지), 초과하면 0.25 올림
+    if (remainder <= 0.05) {
+        return base;
+    } else {
+        return base + step;
+    }
+}
+
+// 4. 화면 및 텍스트 렌더링
+function render() {
+    const weight = parseFloat(document.getElementById('weight').value) || 0;
+    const days = parseInt(document.getElementById('days').value) || 0;
+    const ptName = document.getElementById('ptName').value.trim();
+    
+    const listDiv = document.getElementById('drugList');
+    const outputDiv = document.getElementById('outputText');
+    const badge = document.getElementById('syncBadge');
+
+    // 통계 업데이트
+    document.getElementById('rxCount').textContent = prescribedDrugs.length + '개 약물';
+
+    if (prescribedDrugs.length === 0) {
+        listDiv.innerHTML = '<div style="text-align:center; padding:30px 0; color:var(--muted); font-size:12px;">처방된 약물이 없습니다.</div>';
+        outputDiv.value = "";
+        badge.classList.remove('show');
+        return;
+    }
+
+    // SID 존재 여부에 따른 동기화 뱃지
+    const hasSid = prescribedDrugs.some(d => d.freq === 'SID');
+    if (hasSid) badge.classList.add('show');
+    else badge.classList.remove('show');
+    
+    let listHtml = "";
+    
+    // 텍스트 출력 헤더 작성
+    let textOutput = ptName ? `[처방전] ${ptName} / ${weight}kg\n` : `${weight}kg\n`;
+
+    // 약물 리스트 계산 및 렌더링
+    prescribedDrugs.forEach((drug, index) => {
+        const unitT = (weight * drug.dosage) / drug.potency; // 1회 투여량 (T)
+        let multiplier;
+        
+        // 기존 원본 로직: SID가 하나라도 있으면 전체 약물의 곱셈을 days로 통일함
+        if (hasSid) {
+            multiplier = days;
+        } else {
+            const fNum = drug.freq === "BID" ? 2 : (drug.freq === "TID" ? 3 : 1);
+            multiplier = days * fNum;
+        }
+
+        const totalRaw = unitT * multiplier;
+        const finalQty = calculateFinalQty(totalRaw);
+        const unit = drug.name.includes('(ug)') ? 'ug' : 'mg';
+
+        // HTML 리스트 추가
+        listHtml += `
+            <div class="rx-item">
+                <div class="rx-item-top">
+                    <div>
+                        <div class="rx-name">${drug.name}</div>
+                        <div class="rx-detail">${drug.dosage}${unit}/kg | ${drug.freq} ${drug.timing ? '('+drug.timing+')' : ''}</div>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:12px;">
+                        <span style="font-size:16px; font-weight:700; color:var(--primary);">${finalQty}<small style="font-size:11px; margin-left:2px;">T</small></span>
+                        <button onclick="removeDrug(${index})" class="del-btn">✕</button>
+                    </div>
+                </div>
+                <div class="rx-calc">
+                    <span>원값: ${totalRaw.toFixed(4)}T</span>
+                    <span>최종: <strong>${finalQty}T</strong></span>
+                </div>
+            </div>
+        `;
+        
+        // 텍스트 출력 추가
+        textOutput += `${drug.name} ${drug.dosage}${unit}/kg ${drug.freq} ${drug.timing ? drug.timing + ' ' : ''}${finalQty}T/${drug.potency}${unit}\n`;
+    });
+
+    listDiv.innerHTML = listHtml;
+    textOutput += `\nPO for ${days} days`;
+    outputDiv.value = textOutput;
+    document.getElementById('botStat').textContent = '계산 완료';
+}
+
+// 5. 복사 및 전송 기능
+function copyToClipboard() {
+    const text = document.getElementById('outputText').value;
+    if (!text) { alert('복사할 내용이 없습니다.'); return; }
+    
+    document.getElementById('outputText').select();
+    document.execCommand('copy');
+    
+    const btn = event.target;
+    btn.textContent = '복사됨 ✓';
+    setTimeout(() => btn.textContent = '복사', 1500);
+}
+
+async function sendToSlack() {
+    const text = document.getElementById('outputText').value;
+    if (!text) { alert('전송할 내용이 없습니다.'); return; }
+
+    const btn = document.getElementById('sendBtn');
+    btn.classList.add('btn-sending');
+    document.getElementById('botStat').textContent = '전송 중...';
+
+    try {
+        // api.js의 공통 함수 사용. 처방전이므로 'rx' 타입 지정
+        await sendToSlackAPI('rx', text);
+        document.getElementById('botStat').textContent = '✓ Slack 전송 완료';
+        setTimeout(() => document.getElementById('botStat').textContent = '대기 중', 3000);
+    } catch(e) {
+        document.getElementById('botStat').textContent = '전송 실패: ' + e.message;
+    } finally {
+        btn.classList.remove('btn-sending');
+    }
+}
+</script>
+</body>
+</html>
