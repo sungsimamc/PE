@@ -1,10 +1,9 @@
-/**
- * js/api.js: 외부 통신 전용 함수 모음
- */
+// js/api.js 전체 내용
+
 const WORKER_URL = 'https://pesungsim.sungsimamc.workers.dev/';
 
 /**
- * Cloudflare Worker를 통해 Slack으로 메시지 전송
+ * Slack 전송 함수
  */
 async function sendToSlackAPI(moduleType, formattedText) {
   const payload = { type: moduleType, text: formattedText };
@@ -13,12 +12,12 @@ async function sendToSlackAPI(moduleType, formattedText) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload)
   });
-  if (!response.ok) throw new Error('Slack 전송 실패 (HTTP ' + response.status + ')');
+  if (!response.ok) throw new Error('Slack HTTP ' + response.status);
   return response;
 }
 
 /**
- * Cloudflare Worker를 통해 Google Sheets에 데이터 저장
+ * Google Sheets 전송 함수 (이 부분이 있는지 확인!)
  */
 async function sendToSheetsAPI(sheetsPayload) {
   const payload = { type: 'rx_sheets', data: sheetsPayload };
@@ -27,6 +26,6 @@ async function sendToSheetsAPI(sheetsPayload) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload)
   });
-  if (!response.ok) throw new Error('Sheets 저장 실패 (HTTP ' + response.status + ')');
+  if (!response.ok) throw new Error('Sheets HTTP ' + response.status);
   return response;
 }
