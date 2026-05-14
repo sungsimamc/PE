@@ -1,5 +1,10 @@
 // js/drugs.js
 // 약물 검색기에서 사용할 데이터베이스입니다. 언제든 추가/수정 가능합니다.
+//
+// [grades 필드 사용법]
+// grades: ["정품", "가품"] 처럼 배열로 정의하면
+// 해당 약물 선택 시 처방전 화면에 정품/가품 선택 UI가 자동으로 표시됩니다.
+// 역가는 동일하게 유지되며, 출력 텍스트에만 선택 결과가 반영됩니다.
 
 const DRUG_DB = [
     { name: "AMC", potency: 375 }, { name: "AMC", potency: 625 },
@@ -31,7 +36,8 @@ const DRUG_DB = [
     { name: "topiramate", potency: 100 }, { name: "torsemide", potency: 5 },
     { name: "tramadol", potency: 50 }, { name: "tranexamic acid", potency: 250 },
     { name: "trazodone", potency: 25 }, { name: "trazodone", potency: 50 },
-    { name: "trilostane(정품/가품)", potency: 10 }, { name: "trilostane(정품/가품)", potency: 60 },
+    { name: "trilostane", potency: 10, grades: ["정품", "가품"] },
+    { name: "trilostane", potency: 60, grades: ["정품", "가품"] },
     { name: "tylosin tartrate", potency: 60 }, { name: "UDCA", potency: 200 },
     { name: "zonisamide", potency: 100 },
     { name: "gabapentin", potency: 100 }, { name: "gabapentin", potency: 300 },
@@ -50,9 +56,11 @@ const DRUG_DB = [
     { name: "omeprazole", potency: 20 }, { name: "ondansetron", potency: 8 },
     { name: "oxybutynin chloride", potency: 50 }, { name: "pentoxifylline", potency: 400 },
     { name: "phenobarbital", potency: 30 }, { name: "phenoxybenzamine", potency: 10 },
-    { name: "pimobendan", potency: 5 }, { name: "piroxicam", potency: 10 },
+    { name: "pimobendan", potency: 5, grades: ["정품", "가품"] },
+    { name: "piroxicam", potency: 10 },
     { name: "prednisolone (PDS)", potency: 5 }, { name: "pregabalin", potency: 75 }, { name: "pregabalin", potency: 150 },
     { name: "ramipril", potency: 5 }, { name: "rivaroxaban", potency: 10 },
-    { name: "sevelamer carbonate", potency: 800 }, { name: "sildenafil", potency: 100 },
+    { name: "sevelamer carbonate", potency: 800 },
+    { name: "sildenafil", potency: 100, grades: ["정품", "가품"] },
     { name: "silymarin", potency: 140 }, { name: "spironolactone", potency: 50 }
 ];
