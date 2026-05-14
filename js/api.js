@@ -1,26 +1,32 @@
-// js/api.js
+/**
+ * js/api.js: 외부 통신 전용 함수 모음
+ */
 const WORKER_URL = 'https://pesungsim.sungsimamc.workers.dev/';
 
 /**
- * Cloudflare Worker를 통해 Slack으로 데이터를 전송합니다.
- * @param {string} moduleType - 'exam' (신체검사), 'rx' (처방전) 등 라우팅을 위한 모듈 타입
- * @param {string} formattedText - 슬랙에 전송될 실제 텍스트 메시지
+ * Cloudflare Worker를 통해 Slack으로 메시지 전송
  */
 async function sendToSlackAPI(moduleType, formattedText) {
-  const payload = {
-    type: moduleType,
-    text: formattedText
-  };
-
+  const payload = { type: moduleType, text: formattedText };
   const response = await fetch(WORKER_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload)
   });
+  if (!response.ok) throw new Error('Slack 전송 실패 (HTTP ' + response.status + ')');
+  return response;
+}
 
-  if (!response.ok) {
-    throw new Error('HTTP ' + response.status);
-  }
-  
+/**
+ * Cloudflare Worker를 통해 Google Sheets에 데이터 저장
+ */
+async function sendToSheetsAPI(sheetsPayload) {
+  const payload = { type: 'rx_sheets', data: sheetsPayload };
+  const response = await fetch(WORKER_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+  if (!response.ok) throw new Error('Sheets 저장 실패 (HTTP ' + response.status + ')');
   return response;
 }
