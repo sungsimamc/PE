@@ -667,20 +667,87 @@ function copyToClipboard() {
   setTimeout(() => btn.textContent = '복사', 1500);
 }
 
+/**
+ * [수정본] Slack 전송 및 Google Sheets 저장을 병렬로 처리합니다.
+ * 기존 디자인의 botStat과 sendBtn을 그대로 사용합니다.
+ */
 async function sendToSlack() {
   const text = document.getElementById('outputText').value;
   if (!text) { alert('전송할 내용이 없습니다.'); return; }
 
+  // 1. 필수 기본 정보 및 데이터 구조화 (Sheets 기록용)
+  const weight = parseFloat(document.getElementById('weight').value);
+  const days = parseInt(document.getElementById('days').value);
+  const ptName = document.getElementById('ptName').value.trim() || '(미입력)';
+
+  const sheetsPayload = {
+    timestamp: new Date().toLocaleString('ko-KR'),
+    patientName: ptName,
+    weight: weight,
+    days: days,
+    drugs: prescribedDrugs.map(drug => {
+      // 투약량 및 총 수량 재계산
+      const unitT = (weight * drug.dosage) / drug.potency;
+      const hasSid = prescribedDrugs.some(d => d.freq === 'SID');
+      const multiplier = hasSid
+        ? days
+        : days * (drug.freq === 'BID' ? 2 : drug.freq === 'TID' ? 3 : 1);
+      
+      const finalQty = calculateFinalQty(unitT * multiplier);
+      const unit = drug.name.includes('(ug)') ? 'ug' : 'mg';
+
+      return {
+        name: drug.name,
+        grade: drug.grade || '',
+        dosage: drug.dosage,
+        unit: unit,
+        potency: drug.potency,
+        freq: drug.freq,
+        timing: drug.timing || '',
+        totalQty: finalQty
+      };
+    })
+  };
+
   const btn = document.getElementById('sendBtn');
+  const botStat = document.getElementById('botStat');
+
   btn.classList.add('btn-sending');
-  document.getElementById('botStat').textContent = '전송 중...';
+  botStat.textContent = '기록 및 전송 중...';
 
   try {
-    await sendToSlackAPI('rx', text);
-    document.getElementById('botStat').textContent = '✓ Slack 전송 완료';
-    setTimeout(() => document.getElementById('botStat').textContent = '대기 중', 3000);
-  } catch(e) {
-    document.getElementById('botStat').textContent = '전송 실패: ' + e.message;
+    // 2. Slack 전송과 Sheets 저장을 동시에 수행
+    const results = await Promise.allSettled([
+      sendToSlackAPI('rx', text),       // Slack 전송
+      sendToSheetsAPI(sheetsPayload)    // Google Sheets 저장
+    ]);
+
+    const slackOk = results[0].status === 'fulfilled';
+    const sheetsOk = results[1].status === 'fulfilled';
+
+    // 3. UI 결과 반영
+    if (slackOk && sheetsOk) {
+      botStat.textContent = '✓ Slack · Sheets 전송 완료';
+      botStat.style.color = '#2ecc71';
+    } else if (slackOk) {
+      botStat.textContent = '✓ Slack 성공 / Sheets 실패 ⚠';
+      botStat.style.color = '#f39c12';
+    } else if (sheetsOk) {
+      botStat.textContent = 'Slack 실패 / ✓ Sheets 성공 ⚠';
+      botStat.style.color = '#f39c12';
+    } else {
+      throw new Error('모든 채널 전송 실패');
+    }
+
+    // 3초 후 상태 메시지 초기화
+    setTimeout(() => {
+      botStat.textContent = '대기 중';
+      botStat.style.color = '';
+    }, 3000);
+
+  } catch (e) {
+    botStat.textContent = '전송 오류: ' + e.message;
+    botStat.style.color = '#e74c3c';
   } finally {
     btn.classList.remove('btn-sending');
   }
