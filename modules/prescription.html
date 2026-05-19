@@ -181,7 +181,7 @@ Rx)
 엘리 / 7.5kg
 AMC 12.5mg/kg BID 2.5T/125mg(2.45)
 Bease 0.05T/kg BID 1T(0.75)
-Bromeline 2T Total(1.88)
+Bromeline 0.1T/kg SID 0.75T(0.75)
 PO for 5 days"></textarea>
         </div>
       </div>
@@ -332,8 +332,8 @@ function parsePrescriptionText(rawText) {
   ];
 
   const normalRegex = /^(.+?)\s+([\d.]+)(mg|ug)\/kg\s+(BID|SID|TID)(?:\s+(오전|오후|저녁))?\s+[\d.]+T\/([\d.]+)(mg|ug)(?:\([\d.]+\))?$/i;
-  const beaseRegex = /^(.+?)\s+([\d.]+)T\/kg\s+(BID|SID|TID)(?:\s+(오전|오후|저녁))?\s+[\d.]+T(?:\([\d.]+\))?$/i;
-  const bromelineRegex = /^(.+?)\s+[\d.]+T\s+Total(?:\([\d.]+\))?$/i;
+  // T/kg 포맷을 통합 처리하기 위한 정규식 (Bease, Bromeline 등)
+  const tPerKgRegex = /^(.+?)\s+([\d.]+)T\/kg\s+(BID|SID|TID)(?:\s+(오전|오후|저녁))?\s+[\d.]+T(?:\([\d.]+\))?$/i;
 
   lines.forEach((line, idx) => {
     if (skipPatterns.some(p => p.test(line))) return;
@@ -351,21 +351,8 @@ function parsePrescriptionText(rawText) {
       return;
     }
 
-    match = line.match(bromelineRegex);
-    if (match && line.toLowerCase().includes('bromeline')) {
-      const [, name] = match;
-      drugs.push({
-        name: name.trim(),
-        dosage: 1, // dummy
-        potency: 1, // dummy
-        freq: 'SID',
-        timing: ''
-      });
-      return;
-    }
-
-    match = line.match(beaseRegex);
-    if (match && line.toLowerCase().includes('bease')) {
+    match = line.match(tPerKgRegex);
+    if (match && (line.toLowerCase().includes('bease') || line.toLowerCase().includes('bromeline'))) {
       const [, name, dosage, freq, timing] = match;
       drugs.push({
         name: name.trim(),
@@ -430,9 +417,7 @@ function parseAndImport() {
     const timingStr = d.timing ? ` · ${d.timing}` : '';
     let detailStr = "";
     
-    if (nLower.includes('bromeline')) {
-        detailStr = "고정 산식 (Total 계산)";
-    } else if (nLower.includes('bease')) {
+    if (nLower.includes('bromeline') || nLower.includes('bease')) {
         detailStr = `${d.dosage}T/kg · ${d.freq}${timingStr} · 역가 없음`;
     } else {
         detailStr = `${d.dosage}${unit}/kg · ${d.freq}${timingStr} · 역가 ${d.potency}${unit}`;
@@ -466,13 +451,12 @@ function clearImport() {
 }
 
 // ════════════════════════════════════════════
-// 특수 약물 연동을 위한 UI 동적 제어 기능 강화
+// 특수 약물 연동을 위한 UI 동적 제어 기능 강화 (Bease, Bromeline 동일 적용)
 // ════════════════════════════════════════════
 
 const drugSearchInput = document.getElementById('drugSearch');
 const suggestionBox = document.getElementById('suggestionBox');
 
-// 검색창 타이핑 시 실시간 UI 반영
 drugSearchInput.addEventListener('input', function() {
   const val = this.value.toLowerCase().trim();
   suggestionBox.innerHTML = '';
@@ -483,13 +467,8 @@ drugSearchInput.addEventListener('input', function() {
       return; 
   }
 
-  // Bromeline/Bease 수동 입력 대비 UI 동적 비활성화
-  if (val.includes('bromeline')) {
-      document.getElementById('dosage').disabled = true;
-      document.getElementById('potency').disabled = true;
-      document.getElementById('dosage').placeholder = "고정산식";
-      document.getElementById('potency').placeholder = "역가제외";
-  } else if (val.includes('bease')) {
+  // Bromeline/Bease T/kg 로직 통합
+  if (val.includes('bromeline') || val.includes('bease')) {
       document.getElementById('dosage').disabled = false;
       document.getElementById('potency').disabled = true;
       document.getElementById('dosage').placeholder = "T/kg 입력";
@@ -513,9 +492,7 @@ drugSearchInput.addEventListener('input', function() {
           let unit = drug.name.includes('(ug)') ? 'ug' : 'mg';
           let potencyDisplay = drug.potency ? `${drug.potency}${unit}` : '역가없음';
           
-          if(drug.name.toLowerCase().includes('bromeline')) {
-              potencyDisplay = '고정산식';
-          } else if(drug.name.toLowerCase().includes('bease')) {
+          if(drug.name.toLowerCase().includes('bromeline') || drug.name.toLowerCase().includes('bease')) {
               potencyDisplay = 'T/kg 입력';
           }
           
@@ -524,18 +501,12 @@ drugSearchInput.addEventListener('input', function() {
             drugSearchInput.value = drug.name;
             const nLower = drug.name.toLowerCase();
             
-            // 클릭 시 역가 및 용량 UI 강제 세팅
-            if (nLower.includes('bromeline')) {
-                document.getElementById('dosage').disabled = true;
-                document.getElementById('potency').disabled = true;
-                document.getElementById('dosage').value = "";
-                document.getElementById('potency').value = "";
-                document.getElementById('dosage').placeholder = "고정산식";
-                document.getElementById('potency').placeholder = "역가제외";
-            } else if (nLower.includes('bease')) {
+            // 클릭 시 역가 및 용량 UI 강제 세팅 (T/kg 통합)
+            if (nLower.includes('bromeline') || nLower.includes('bease')) {
                 document.getElementById('dosage').disabled = false;
                 document.getElementById('potency').disabled = true;
-                document.getElementById('dosage').value = 0.05; // Bease 초기 기본값
+                // Bease는 0.05, Bromeline은 빈칸 유지
+                document.getElementById('dosage').value = nLower.includes('bease') ? 0.05 : "";
                 document.getElementById('potency').value = "";
                 document.getElementById('dosage').placeholder = "T/kg 입력";
                 document.getElementById('potency').placeholder = "역가제외";
@@ -637,14 +608,9 @@ function addDrug() {
   const nLower = name.toLowerCase();
 
   // 특수 약물에 대한 필수값 검증 예외 처리 (Bypass)
-  if (nLower.includes('bromeline')) {
-      dosage = 0; // 연산 무시용 더미값
-      potency = 1; // 0 분모 방지용 더미값
-      freq = 'SID'; 
-      timing = '';
-  } else if (nLower.includes('bease')) {
+  if (nLower.includes('bromeline') || nLower.includes('bease')) {
       if (isNaN(dosage)) {
-          alert("Bease의 처방 용량(T/kg)을 직접 입력해주세요. (예: 0.05)");
+          alert(`${name}의 처방 용량(T/kg)을 직접 입력해주세요.`);
           return;
       }
       potency = 1; // 역가 무시용 더미값
@@ -731,12 +697,8 @@ function render() {
     const gradeTag = drug.grade ? `[${drug.grade}] ` : '';
     let unit = drug.name.includes('(ug)') ? 'ug' : 'mg';
 
-    if (nLower.includes('bromeline')) {
-        totalRaw = (weight * 8) / 60;
-        finalQty = calculateFinalQty(totalRaw);
-        listDetailText = `고정 산식 (체중×8÷60)`;
-        outputLine = `Bromeline ${finalQty}T Total(${Number(totalRaw.toFixed(2))})`;
-    } else if (nLower.includes('bease')) {
+    // Bromeline과 Bease 모두 동일한 T/kg 로직 적용
+    if (nLower.includes('bromeline') || nLower.includes('bease')) {
         const unitT = weight * drug.dosage; 
         let fNum = drug.freq === "BID" ? 2 : (drug.freq === "TID" ? 3 : 1);
         let multiplier = hasSid ? days : days * fNum;
@@ -815,10 +777,7 @@ async function sendToSlack() {
       let totalQty = 0;
       let unit = drug.name.includes('(ug)') ? 'ug' : 'mg';
 
-      if (nLower.includes('bromeline')) {
-          totalQty = calculateFinalQty((weight * 8) / 60);
-          unit = 'T';
-      } else if (nLower.includes('bease')) {
+      if (nLower.includes('bromeline') || nLower.includes('bease')) {
           const unitT = weight * drug.dosage;
           const multiplier = hasSid ? days : days * (drug.freq === 'BID' ? 2 : (drug.freq === 'TID' ? 3 : 1));
           totalQty = calculateFinalQty(unitT * multiplier);
