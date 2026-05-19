@@ -177,8 +177,10 @@
             class="mi"
             style="height: 100px; font-family: var(--mono); font-size: 12px;"
             placeholder="예시:
-AMC 12.5mg/kg BID 2.5T/125mg
-Pred 1mg/kg SID 저녁 0.5T/5mg
+Rx)
+엘리 / 7.5kg
+AMC 12.5mg/kg BID 2.5T/125mg(2.45)
+Pred 1mg/kg SID 저녁 0.5T/5mg(0.48)
 PO for 5 days"></textarea>
         </div>
       </div>
@@ -314,34 +316,32 @@ function toggleImportSection() {
 
 // ════════════════════════════════════════════
 // [NEW] 기존 처방 불러오기 — 파서 핵심 로직
-//
-// 파싱 대상 포맷 (본 프로그램 출력 포맷):
-//   {약물명} {용량}{unit}/kg {freq} [{타이밍}] {수량}T/{역가}{unit}
-//   예: AMC 12.5mg/kg BID 2.5T/125mg
-//   예: Pred 1mg/kg SID 저녁 0.5T/5mg
-//   예: Atropine 0.04mg/kg SID 오전 0.25T/0.5mg
 // ════════════════════════════════════════════
 function parsePrescriptionText(rawText) {
   const lines = rawText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
   const drugs = [];
   const errors = [];
 
-  // 파싱하지 않을 줄 패턴 (요약 줄)
+  // 파싱하지 않을 줄 패턴 (요약 줄 및 최상단 Rx) 등)
   const skipPatterns = [
     /^PO\s+for/i,
     /^\[처방전\]/,
+    /^Rx\)/i, // Rx) 패턴 스킵
     /^\d+(\.\d+)?kg$/,
+    /\/\s*[\d.]+\s*kg/i // 환자명 / 체중 형태의 줄 스킵
   ];
 
-  // 메인 파싱 정규식
-  // 그룹: (약물명) (용량)(unit) (freq) [(타이밍)] (수량)T/(역가)(unit)
-  const mainRegex = /^(.+?)\s+([\d.]+)(mg|ug)\/kg\s+(BID|SID|TID)(?:\s+(오전|오후|저녁))?\s+[\d.]+T\/([\d.]+)(mg|ug)$/i;
+  // 메인 파싱 정규식: 마지막에 괄호 안의 원본값 (raw value) 패턴 `(?:\([\d.]+\))?` 추가 허용
+  const normalRegex = /^(.+?)\s+([\d.]+)(mg|ug)\/kg\s+(BID|SID|TID)(?:\s+(오전|오후|저녁))?\s+[\d.]+T\/([\d.]+)(mg|ug)(?:\([\d.]+\))?$/i;
+  // Bease 파싱 정규식
+  const beaseRegex = /^(.+?)\s+([\d.]+)T\/kg\s+(BID|SID|TID)(?:\s+(오전|오후|저녁))?\s+[\d.]+T(?:\([\d.]+\))?$/i;
+  // Bromeline 파싱 정규식
+  const bromelineRegex = /^(.+?)\s+[\d.]+T\s+Total(?:\([\d.]+\))?$/i;
 
   lines.forEach((line, idx) => {
-    // 스킵 대상 줄
     if (skipPatterns.some(p => p.test(line))) return;
 
-    const match = line.match(mainRegex);
+    let match = line.match(normalRegex);
     if (match) {
       const [, name, dosage, dosageUnit, freq, timing, potency, potencyUnit] = match;
       drugs.push({
@@ -351,12 +351,38 @@ function parsePrescriptionText(rawText) {
         freq: freq.toUpperCase(),
         timing: timing || '',
       });
-    } else {
-      // 약물처럼 보이는데 파싱 실패한 줄만 오류로 기록
-      // (완전히 다른 형태의 줄은 조용히 무시)
-      if (/\/kg/i.test(line)) {
-        errors.push(`줄 ${idx + 1}: "${line}"`);
-      }
+      return;
+    }
+
+    match = line.match(bromelineRegex);
+    if (match && line.toLowerCase().includes('bromeline')) {
+      const [, name] = match;
+      drugs.push({
+        name: name.trim(),
+        dosage: 1, // dummy
+        potency: 1, // dummy
+        freq: 'SID',
+        timing: ''
+      });
+      return;
+    }
+
+    match = line.match(beaseRegex);
+    if (match && line.toLowerCase().includes('bease')) {
+      const [, name, dosage, freq, timing] = match;
+      drugs.push({
+        name: name.trim(),
+        dosage: parseFloat(dosage),
+        potency: 1, // dummy
+        freq: freq.toUpperCase(),
+        timing: timing || ''
+      });
+      return;
+    }
+
+    // 약물처럼 보이는데 파싱 실패한 줄만 오류로 기록
+    if (/(kg|Total)/i.test(line)) {
+      errors.push(`줄 ${idx + 1}: "${line}"`);
     }
   });
 
@@ -405,13 +431,24 @@ function parseAndImport() {
 
   let previewHtml = '';
   drugs.forEach(d => {
-    const unit = d.name.includes('(ug)') ? 'ug' : 'mg';
+    const nLower = d.name.toLowerCase();
+    let unit = d.name.includes('(ug)') ? 'ug' : 'mg';
     const timingStr = d.timing ? ` · ${d.timing}` : '';
+    let detailStr = "";
+    
+    if (nLower.includes('bromeline')) {
+        detailStr = "고정 산식 (Total 계산)";
+    } else if (nLower.includes('bease')) {
+        detailStr = `${d.dosage}T/kg · ${d.freq}${timingStr} · 역가 없음`;
+    } else {
+        detailStr = `${d.dosage}${unit}/kg · ${d.freq}${timingStr} · 역가 ${d.potency}${unit}`;
+    }
+
     previewHtml += `
       <div class="import-drug-row">
         <div>
           <div class="import-drug-name">${d.name}</div>
-          <div class="import-drug-detail">${d.dosage}${unit}/kg · ${d.freq}${timingStr} · 역가 ${d.potency}${unit}</div>
+          <div class="import-drug-detail">${detailStr}</div>
         </div>
         <div class="import-drug-status">추가됨 ✓</div>
       </div>
@@ -435,7 +472,7 @@ function clearImport() {
 }
 
 // ════════════════════════════════════════════
-// 기존 코드 (변경 없음)
+// 기존 코드 (일부 수정)
 // ════════════════════════════════════════════
 
 // 1. 자동완성
@@ -448,29 +485,31 @@ drugSearchInput.addEventListener('input', function() {
 
   if (!val) { suggestionBox.style.display = 'none'; return; }
 
-  const filtered = DRUG_DB.filter(d => d.name.toLowerCase().includes(val));
+  // DRUG_DB가 존재할 때만 실행되도록 안전장치
+  if(typeof DRUG_DB !== 'undefined') {
+      const filtered = DRUG_DB.filter(d => d.name.toLowerCase().includes(val));
 
-  if (filtered.length > 0) {
-    suggestionBox.style.display = 'block';
-    filtered.slice(0, 10).forEach(drug => {
-      const div = document.createElement('div');
-      div.className = 'ac-item';
-      const unit = drug.name.includes('(ug)') ? 'ug' : 'mg';
-      div.innerHTML = `<strong>${drug.name}</strong> (${drug.potency}${unit})`;
-      div.addEventListener('click', function() {
-        drugSearchInput.value = drug.name;
-        document.getElementById('potency').value = drug.potency;
+      if (filtered.length > 0) {
+        suggestionBox.style.display = 'block';
+        filtered.slice(0, 10).forEach(drug => {
+          const div = document.createElement('div');
+          div.className = 'ac-item';
+          const unit = drug.name.includes('(ug)') ? 'ug' : 'mg';
+          div.innerHTML = `<strong>${drug.name}</strong> (${drug.potency}${unit})`;
+          div.addEventListener('click', function() {
+            drugSearchInput.value = drug.name;
+            document.getElementById('potency').value = drug.potency;
+            suggestionBox.style.display = 'none';
+            showGradeSelector(drug);
+          });
+          suggestionBox.appendChild(div);
+        });
+      } else {
         suggestionBox.style.display = 'none';
-        showGradeSelector(drug);
-      });
-      suggestionBox.appendChild(div);
-    });
-  } else {
-    suggestionBox.style.display = 'none';
+      }
   }
 });
 
-// 검색창 직접 수정 시 grade UI 숨기기
 drugSearchInput.addEventListener('input', function() {
   hideGradeSelector();
 });
@@ -536,18 +575,35 @@ function addDrug() {
     return;
   }
 
-  const name = drugSearchInput.value;
-  const dosage = parseFloat(document.getElementById('dosage').value);
-  const potency = parseFloat(document.getElementById('potency').value);
-  const freq = document.getElementById('freq').value;
-  const timing = freq === 'SID' ? document.getElementById('timing').value : "";
+  const name = drugSearchInput.value.trim();
+  let dosage = parseFloat(document.getElementById('dosage').value);
+  let potency = parseFloat(document.getElementById('potency').value);
+  let freq = document.getElementById('freq').value;
+  let timing = freq === 'SID' ? document.getElementById('timing').value : "";
 
-  if (!name || isNaN(dosage) || isNaN(potency)) {
-    alert("약물 이름, 용량, 역가를 정확히 입력해주세요.");
+  if (!name) {
+    alert("약물 이름을 정확히 입력해주세요.");
     return;
   }
 
-  // 정품/가품 UI가 표시 중인데 선택하지 않은 경우 차단
+  const nLower = name.toLowerCase();
+
+  // 특수 약물에 대한 예외 처리 (입력값 무시/대체)
+  if (nLower === 'bromeline') {
+      dosage = 1; 
+      potency = 1; 
+      freq = 'SID'; 
+      timing = '';
+  } else if (nLower === 'bease') {
+      if (isNaN(dosage)) dosage = 0.05; // 입력값이 없으면 0.05를 기본값으로 사용
+      potency = 1;
+  } else {
+      if (isNaN(dosage) || isNaN(potency)) {
+        alert("약물 이름, 용량, 역가를 정확히 입력해주세요.");
+        return;
+      }
+  }
+
   const gradeWrap = document.getElementById('gradeWrap');
   const grade = getSelectedGrade();
   if (gradeWrap.classList.contains('show') && !grade) {
@@ -610,29 +666,51 @@ function render() {
   else badge.classList.remove('show');
 
   let listHtml = "";
-  let textOutput = ptName ? `[처방전] ${ptName} / ${weight}kg\n` : `${weight}kg\n`;
+  // 요구사항: 최상단에 Rx) 기재 후 환자 및 체중 기록. [처방전] 텍스트 제거.
+  let textOutput = "Rx)\n" + (ptName ? `${ptName} / ${weight}kg\n` : `${weight}kg\n`);
 
   prescribedDrugs.forEach((drug, index) => {
-    const unitT = (weight * drug.dosage) / drug.potency;
-    let multiplier;
+    let totalRaw = 0;
+    let finalQty = 0;
+    let listDetailText = "";
+    let outputLine = "";
 
-    if (hasSid) {
-      multiplier = days;
+    const nLower = drug.name.toLowerCase();
+    const gradeTag = drug.grade ? `[${drug.grade}] ` : '';
+    let unit = drug.name.includes('(ug)') ? 'ug' : 'mg';
+
+    if (nLower === 'bromeline') {
+        // Bromeline: 몸무게 * 8 / 60 
+        totalRaw = (weight * 8) / 60;
+        finalQty = calculateFinalQty(totalRaw);
+        listDetailText = `고정 산식 (체중×8÷60)`;
+        outputLine = `Bromeline ${finalQty}T Total(${Number(totalRaw.toFixed(2))})`;
+    } else if (nLower === 'bease') {
+        // Bease: dosage(0.05) * 몸무게. 역가 나누기 생략.
+        const unitT = weight * drug.dosage; 
+        let fNum = drug.freq === "BID" ? 2 : (drug.freq === "TID" ? 3 : 1);
+        let multiplier = hasSid ? days : days * fNum;
+        totalRaw = unitT * multiplier;
+        finalQty = calculateFinalQty(totalRaw);
+        listDetailText = `${drug.dosage}T/kg | ${drug.freq} ${drug.timing ? '('+drug.timing+')' : ''}`;
+        outputLine = `${drug.name} ${gradeTag}${drug.dosage}T/kg ${drug.freq} ${drug.timing ? drug.timing + ' ' : ''}${finalQty}T(${Number(totalRaw.toFixed(2))})`;
     } else {
-      const fNum = drug.freq === "BID" ? 2 : (drug.freq === "TID" ? 3 : 1);
-      multiplier = days * fNum;
+        // 일반 약물 로직
+        const unitT = (weight * drug.dosage) / drug.potency;
+        let fNum = drug.freq === "BID" ? 2 : (drug.freq === "TID" ? 3 : 1);
+        let multiplier = hasSid ? days : days * fNum;
+        totalRaw = unitT * multiplier;
+        finalQty = calculateFinalQty(totalRaw);
+        listDetailText = `${drug.dosage}${unit}/kg | ${drug.freq} ${drug.timing ? '('+drug.timing+')' : ''}`;
+        outputLine = `${drug.name} ${gradeTag}${drug.dosage}${unit}/kg ${drug.freq} ${drug.timing ? drug.timing + ' ' : ''}${finalQty}T/${drug.potency}${unit}(${Number(totalRaw.toFixed(2))})`;
     }
-
-    const totalRaw = unitT * multiplier;
-    const finalQty = calculateFinalQty(totalRaw);
-    const unit = drug.name.includes('(ug)') ? 'ug' : 'mg';
 
     listHtml += `
       <div class="rx-item">
         <div class="rx-item-top">
           <div>
             <div class="rx-name">${drug.name}${drug.grade ? ` <span style="font-size:10px; font-weight:500; padding:1px 5px; border-radius:3px; background:${drug.grade === '정품' ? '#E8F5E9' : '#FFF3E0'}; color:${drug.grade === '정품' ? '#2E7D32' : '#E65100'}; border:1px solid ${drug.grade === '정품' ? '#A5D6A7' : '#FFCC80'};">${drug.grade}</span>` : ''}</div>
-            <div class="rx-detail">${drug.dosage}${unit}/kg | ${drug.freq} ${drug.timing ? '('+drug.timing+')' : ''}</div>
+            <div class="rx-detail">${listDetailText}</div>
           </div>
           <div style="display:flex; align-items:center; gap:12px;">
             <span style="font-size:16px; font-weight:700; color:var(--primary);">${finalQty}<small style="font-size:11px; margin-left:2px;">T</small></span>
@@ -646,8 +724,7 @@ function render() {
       </div>
     `;
 
-    const gradeTag = drug.grade ? `[${drug.grade}] ` : '';
-    textOutput += `${drug.name} ${gradeTag}${drug.dosage}${unit}/kg ${drug.freq} ${drug.timing ? drug.timing + ' ' : ''}${finalQty}T/${drug.potency}${unit}\n`;
+    textOutput += outputLine + "\n";
   });
 
   listDiv.innerHTML = listHtml;
@@ -668,33 +745,41 @@ function copyToClipboard() {
 }
 
 /**
- * [수정본] Slack 전송 및 Google Sheets 저장을 병렬로 처리합니다.
- * 기존 디자인의 botStat과 sendBtn을 그대로 사용합니다.
+ * Slack 전송 및 Google Sheets 저장을 병렬로 처리합니다.
  */
 async function sendToSlack() {
   const text = document.getElementById('outputText').value;
   if (!text) { alert('전송할 내용이 없습니다.'); return; }
 
-  // 1. 필수 기본 정보 및 데이터 구조화 (Sheets 기록용)
   const weight = parseFloat(document.getElementById('weight').value);
   const days = parseInt(document.getElementById('days').value);
   const ptName = document.getElementById('ptName').value.trim() || '(미입력)';
 
+  // 1. 필수 기본 정보 및 데이터 구조화 (Sheets 기록용 - Rx 및 괄호 데이터 미포함 원본 유지)
   const sheetsPayload = {
     timestamp: new Date().toLocaleString('ko-KR'),
     patientName: ptName,
     weight: weight,
     days: days,
     drugs: prescribedDrugs.map(drug => {
-      // 투약량 및 총 수량 재계산
-      const unitT = (weight * drug.dosage) / drug.potency;
       const hasSid = prescribedDrugs.some(d => d.freq === 'SID');
-      const multiplier = hasSid
-        ? days
-        : days * (drug.freq === 'BID' ? 2 : drug.freq === 'TID' ? 3 : 1);
-      
-      const finalQty = calculateFinalQty(unitT * multiplier);
-      const unit = drug.name.includes('(ug)') ? 'ug' : 'mg';
+      const nLower = drug.name.toLowerCase();
+      let totalQty = 0;
+      let unit = drug.name.includes('(ug)') ? 'ug' : 'mg';
+
+      if (nLower === 'bromeline') {
+          totalQty = calculateFinalQty((weight * 8) / 60);
+          unit = 'T';
+      } else if (nLower === 'bease') {
+          const unitT = weight * drug.dosage;
+          const multiplier = hasSid ? days : days * (drug.freq === 'BID' ? 2 : (drug.freq === 'TID' ? 3 : 1));
+          totalQty = calculateFinalQty(unitT * multiplier);
+          unit = 'T';
+      } else {
+          const unitT = (weight * drug.dosage) / drug.potency;
+          const multiplier = hasSid ? days : days * (drug.freq === 'BID' ? 2 : (drug.freq === 'TID' ? 3 : 1));
+          totalQty = calculateFinalQty(unitT * multiplier);
+      }
 
       return {
         name: drug.name,
@@ -704,7 +789,7 @@ async function sendToSlack() {
         potency: drug.potency,
         freq: drug.freq,
         timing: drug.timing || '',
-        totalQty: finalQty
+        totalQty: totalQty
       };
     })
   };
@@ -716,10 +801,10 @@ async function sendToSlack() {
   botStat.textContent = '기록 및 전송 중...';
 
   try {
-    // 2. Slack 전송과 Sheets 저장을 동시에 수행
+    // 2. Slack 전송과 Sheets 저장을 동시에 수행 (api.js 의 기존 함수 호출)
     const results = await Promise.allSettled([
-      sendToSlackAPI('rx', text),       // Slack 전송
-      sendToSheetsAPI(sheetsPayload)    // Google Sheets 저장
+      sendToSlackAPI('rx', text),       // Slack 전송 (신규 포맷 텍스트)
+      sendToSheetsAPI(sheetsPayload)    // Google Sheets 저장 (기존 포맷 구조체)
     ]);
 
     const slackOk = results[0].status === 'fulfilled';
