@@ -62,5 +62,9 @@ const DRUG_DB = [
     { name: "ramipril", potency: 5 }, { name: "rivaroxaban", potency: 10 },
     { name: "sevelamer carbonate", potency: 800 },
     { name: "sildenafil", potency: 100, grades: ["정품", "가품"] },
-    { name: "silymarin", potency: 140 }, { name: "spironolactone", potency: 50 }
+    { name: "silymarin", potency: 140 }, { name: "spironolactone", potency: 50 },
+    
+    // 신규 추가 특수 약물
+    { name: "Bease", potency: null }, // 역가 불필요
+    { name: "Bromeline", potency: null } // 역가 불필요
 ];
