@@ -5,10 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>신체검사 — 성심동물의료센터 EMR</title>
 
-<!-- 공통 CSS 불러오기 (폴더 한 단계 위로 이동) -->
 <link rel="stylesheet" href="../css/common.css">
 
-<!-- 공통 JS 불러오기 -->
 <script src="../js/api.js"></script>
 
 </head>
@@ -16,7 +14,6 @@
 
 <header class="app-header">
   <a href="../index.html" class="hdr-left">
-    <!-- 메인 화면으로 돌아가기 기능 추가 및 로고 경로 수정 -->
     <img src="../로고_사진.png" alt="성심동물의료센터" class="hdr-logo">
     <div class="hdr-div"></div>
     <span class="hdr-title">〈 뒤로 (홈) | 신체검사</span>
@@ -28,7 +25,6 @@
 </header>
 
 <div class="page">
-  <!-- PATIENT -->
   <div class="pt-bar">
     <span class="pt-label">환자</span>
     <div class="pt-field">
@@ -50,7 +46,6 @@
     </div>
   </div>
 
-  <!-- 1. GENERAL -->
   <div class="sc" id="sec-general">
     <div class="sc-hdr"><div class="sc-bar"></div><div><div class="sc-tt">전반적 평가</div><div class="sc-sub">General Assessment</div></div><span class="sc-badge" id="b-general">—</span></div>
     <div class="sc-body">
@@ -75,10 +70,18 @@
           <button class="tog" onclick="T('posture',this,'보행 이상',0)">보행 이상</button>
         </div></div>
       </div>
+      <div class="er" id="r-aggression">
+        <div><div class="el">공격성</div><div class="es">Aggression</div></div>
+        <div class="ec"><div class="tg" id="tg-aggression">
+          <button class="tog" onclick="T('aggression',this,'없음',1)">없음</button>
+          <button class="tog" onclick="T('aggression',this,'방어적',0)">방어적</button>
+          <button class="tog" onclick="T('aggression',this,'공격적',0)">공격적</button>
+          <button class="tog" onclick="T('aggression',this,'심한 공격성',0)">심한 공격성</button>
+        </div></div>
+      </div>
     </div>
   </div>
 
-  <!-- 2. VITALS -->
   <div class="sc" id="sec-vitals">
     <div class="sc-hdr"><div class="sc-bar"></div><div><div class="sc-tt">활력징후</div><div class="sc-sub">Vital Signs</div></div><span class="sc-badge" id="b-vitals">—</span></div>
     <div class="sc-body">
@@ -146,7 +149,6 @@
     </div>
   </div>
 
-  <!-- 3. CV -->
   <div class="sc" id="sec-cv">
     <div class="sc-hdr"><div class="sc-bar"></div><div><div class="sc-tt">심혈관</div><div class="sc-sub">Cardiovascular</div></div><span class="sc-badge" id="b-cv">—</span></div>
     <div class="sc-body">
@@ -179,7 +181,6 @@
     </div>
   </div>
 
-  <!-- 4. MM + CRT -->
   <div class="sc" id="sec-mm">
     <div class="sc-hdr"><div class="sc-bar"></div><div><div class="sc-tt">점막 / CRT</div><div class="sc-sub">Mucous Membranes & CRT</div></div><span class="sc-badge" id="b-mm">—</span></div>
     <div class="sc-body">
@@ -213,7 +214,6 @@
     </div>
   </div>
 
-  <!-- 5. BODY CONDITION -->
   <div class="sc" id="sec-body">
     <div class="sc-hdr"><div class="sc-bar"></div><div><div class="sc-tt">체형 / 수화 상태</div><div class="sc-sub">BCS · MCS · Hydration</div></div><span class="sc-badge" id="b-body">—</span></div>
     <div class="sc-body">
@@ -254,7 +254,6 @@
     </div>
   </div>
 
-  <!-- 6. HEAD -->
   <div class="sc" id="sec-head">
     <div class="sc-hdr"><div class="sc-bar"></div><div><div class="sc-tt">두부</div><div class="sc-sub">Eyes · Ears · Nose · Oral</div></div><span class="sc-badge" id="b-head">—</span></div>
     <div class="sc-body">
@@ -329,7 +328,6 @@
     </div>
   </div>
 
-  <!-- 7. NECK -->
   <div class="sc" id="sec-neck">
     <div class="sc-hdr"><div class="sc-bar"></div><div><div class="sc-tt">목</div><div class="sc-sub">Neck</div></div><span class="sc-badge" id="b-neck">—</span></div>
     <div class="sc-body">
@@ -353,7 +351,6 @@
     </div>
   </div>
 
-  <!-- 8. LN -->
   <div class="sc" id="sec-lymph">
     <div class="sc-hdr"><div class="sc-bar"></div><div><div class="sc-tt">림프절</div><div class="sc-sub">Lymph Nodes</div></div><span class="sc-badge" id="b-lymph">—</span></div>
     <div class="sc-body">
@@ -364,7 +361,6 @@
     </div>
   </div>
 
-  <!-- 9. ABDOMEN -->
   <div class="sc" id="sec-abdomen">
     <div class="sc-hdr"><div class="sc-bar"></div><div><div class="sc-tt">복부</div><div class="sc-sub">Abdomen</div></div><span class="sc-badge" id="b-abdomen">—</span></div>
     <div class="sc-body">
@@ -406,7 +402,6 @@
     </div>
   </div>
 
-  <!-- 10. SKIN -->
   <div class="sc" id="sec-skin">
     <div class="sc-hdr"><div class="sc-bar"></div><div><div class="sc-tt">피부 / 피모</div><div class="sc-sub">Skin & Haircoat</div></div><span class="sc-badge" id="b-skin">—</span></div>
     <div class="sc-body">
@@ -440,7 +435,6 @@
     </div>
   </div>
 
-  <!-- 11. MASSES -->
   <div class="sc" id="sec-masses">
     <div class="sc-hdr"><div class="sc-bar"></div><div><div class="sc-tt">종괴</div><div class="sc-sub">Masses</div></div><span class="sc-badge" id="b-masses">—</span></div>
     <div class="sc-body">
@@ -458,7 +452,6 @@
     </div>
   </div>
 
-  <!-- 12. REPRO -->
   <div class="sc" id="sec-repro">
     <div class="sc-hdr"><div class="sc-bar"></div><div><div class="sc-tt">생식기</div><div class="sc-sub">Reproductive</div></div><span class="sc-badge" id="b-repro">—</span></div>
     <div class="sc-body">
@@ -481,10 +474,7 @@
     </div>
   </div>
 
-</div><!-- /page -->
-
-<!-- BOTTOM BAR -->
-<div class="bot">
+</div><div class="bot">
   <span class="bot-stat" id="botStat">입력 대기</span>
   <div class="btn-row">
     <button class="btn btn-ghost btn-d" onclick="resetAll()">초기화</button>
@@ -493,7 +483,6 @@
   </div>
 </div>
 
-<!-- MODAL -->
 <div class="modal-ov" id="modal">
   <div class="modal">
     <div class="modal-hdr">
@@ -522,7 +511,7 @@ const LN_SHORT = ['하악','견갑 전','액와','서혜','슬와'];
 const LN_FULL  = ['하악(Mandibular)','견갑 전(Prescapular)','액와(Axillary)','서혜(Inguinal)','슬와(Popliteal)'];
 
 const SEC_KEYS = {
-  general: ['mentation','posture'],
+  general: ['mentation','posture','aggression'],
   vitals:  ['temp','hr','rr','bp','resp_effort','lungs'], 
   cv:      ['heart_rhythm','murmur'],
   mm:      ['mm_color','mm_moist','crt'],
@@ -806,7 +795,7 @@ const ROW_MAP={
   neck_pain:'r-neck_pain',neck_rom:'r-neck_rom',
   abd_tension:'r-abd_tension',abd_pain:'r-abd_pain',abd_findings:'r-abd_findings',
   haircoat:'r-haircoat',skin:'r-skin',masses_yn:'r-masses_yn',repro:'r-repro',
-  mentation:'r-mentation',posture:'r-posture',
+  mentation:'r-mentation',posture:'r-posture', aggression:'r-aggression'
 };
 LN_KEYS.forEach(k=>{ ROW_MAP[k]='r-ln'; });
 
@@ -883,6 +872,7 @@ function buildText(){
 
   if(v('mentation') && !['BAR','QAR'].includes(v('mentation'))) lines.push('  Mentation: '+v('mentation'));
   if(v('posture') && v('posture')!=='정상') lines.push('  자세/보행: '+v('posture'));
+  if(v('aggression') && v('aggression')!=='없음') lines.push('  공격성: '+v('aggression'));
 
   const mmC = v('mm_color') || '핑크(정상)';
   const mmM = v('mm_moist') || '촉촉(정상)';
@@ -890,9 +880,12 @@ function buildText(){
   lines.push(`◎ MM/CRT: 점막색(${mmC}), 습도(${mmM}), CRT(${crtV})`);
 
   const cvParts=[];
-  if(v('heart_rhythm')&&v('heart_rhythm')!=='규칙') cvParts.push('리듬 '+v('heart_rhythm'));
-  const murmurStr = v('murmur')==='있음' ? '심잡음+'+(S['murmur']?.grade?' G'+S['murmur'].grade:'') : null;
-  if(murmurStr) cvParts.push(murmurStr);
+  if(v('heart_rhythm')) cvParts.push('리듬 '+v('heart_rhythm'));
+  if(v('murmur')==='있음') {
+      cvParts.push('심잡음+'+(S['murmur']?.grade?' G'+S['murmur'].grade:''));
+  } else if(v('murmur')==='없음') {
+      cvParts.push('심잡음 없음');
+  }
   if(cvParts.length) lines.push('◎ CV: '+cvParts.join(', '));
 
   const bodyParts=[];
@@ -902,7 +895,8 @@ function buildText(){
   if(bodyParts.length) lines.push('◎ 체형/수화: '+bodyParts.join(', '));
 
   if(v('resp_effort')&&v('resp_effort')!=='정상') lines.push('◎ 호흡노력: '+v('resp_effort'));
-  if(vf('lungs')&&vf('lungs')!=='정상'){
+  
+  if(vf('lungs')){
     lines.push('◎ 폐 청진: '+vf('lungs')+(m('lungs')?' ('+m('lungs')+')':''));
   }
 
@@ -948,7 +942,6 @@ function copyText(){
   const b=event.target; b.textContent='복사됨 ✓'; setTimeout(()=>b.textContent='클립보드 복사',1500);
 }
 
-// ⚠️ 여기에서 api.js의 공통 함수를 호출하여 라우팅 타입('exam')을 함께 보냅니다.
 async function sendToSlack(){
   if(!document.getElementById('modal').classList.contains('open')){ openModal(); return; }
   const text=buildText();
@@ -956,9 +949,7 @@ async function sendToSlack(){
   [s,ms].forEach(b=>{if(b)b.classList.add('btn-sending');});
   
   try {
-    // API 호출 (type: 'exam')
     await sendToSlackAPI('exam', text);
-    
     res.textContent='✓ Slack 전송 완료'; res.className='send-res ok'; res.style.display='block';
     setTimeout(()=>{res.style.display='none';},3000);
   } catch(e){
