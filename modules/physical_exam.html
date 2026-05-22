@@ -870,13 +870,13 @@ function buildText(){
   const bV = v('bp') ? v('bp') + 'mmHg' : '—';
   lines.push(`◎ V/S: T ${tV}, HR ${hV}, RR ${rV}, BP ${bV}`);
 
-  if(v('mentation') && !['BAR','QAR'].includes(v('mentation'))) lines.push('  Mentation: '+v('mentation'));
-  if(v('posture') && v('posture')!=='정상') lines.push('  자세/보행: '+v('posture'));
-  if(v('aggression') && v('aggression')!=='없음') lines.push('  공격성: '+v('aggression'));
+  if(v('mentation')) lines.push('  Mentation: '+v('mentation'));
+  if(v('posture')) lines.push('  자세/보행: '+v('posture'));
+  if(v('aggression')) lines.push('  공격성: '+v('aggression'));
 
-  const mmC = v('mm_color') || '핑크(정상)';
-  const mmM = v('mm_moist') || '촉촉(정상)';
-  const crtV = v('crt') || '1-2sec(정상)';
+  const mmC = v('mm_color') || '핑크';
+  const mmM = v('mm_moist') || '촉촉';
+  const crtV = v('crt') || '1-2sec';
   lines.push(`◎ MM/CRT: 점막색(${mmC}), 습도(${mmM}), CRT(${crtV})`);
 
   const cvParts=[];
@@ -890,43 +890,50 @@ function buildText(){
 
   const bodyParts=[];
   if(v('bcs')) bodyParts.push('BCS '+v('bcs')+'/9');
-  if(v('mcs')&&v('mcs')!=='정상') bodyParts.push('MCS '+v('mcs'));
-  if(v('hydration')&&v('hydration')!=='정상') bodyParts.push('탈수 '+v('hydration'));
+  if(v('mcs')) bodyParts.push('MCS '+v('mcs'));
+  if(v('hydration')) bodyParts.push('탈수 '+v('hydration'));
   if(bodyParts.length) lines.push('◎ 체형/수화: '+bodyParts.join(', '));
 
-  if(v('resp_effort')&&v('resp_effort')!=='정상') lines.push('◎ 호흡노력: '+v('resp_effort'));
+  if(v('resp_effort')) lines.push('◎ 호흡노력: '+v('resp_effort'));
   
   if(vf('lungs')){
     lines.push('◎ 폐 청진: '+vf('lungs')+(m('lungs')?' ('+m('lungs')+')':''));
   }
 
   const headLines=[];
-  if(vf('eyes')&&vf('eyes')!=='정상') headLines.push('눈: '+vf('eyes'));
-  if(vf('ears')&&vf('ears')!=='정상') headLines.push('귀: '+vf('ears'));
-  if(vf('nose')&&vf('nose')!=='정상') headLines.push('코: '+vf('nose'));
-  if(vf('oral')&&vf('oral')!=='정상') headLines.push('구강: '+vf('oral'));
+  if(vf('eyes')) headLines.push('눈('+vf('eyes')+')');
+  if(vf('ears')) headLines.push('귀('+vf('ears')+')');
+  if(vf('nose')) headLines.push('코('+vf('nose')+')');
+  if(vf('oral')) headLines.push('구강('+vf('oral')+')');
   if(headLines.length) lines.push('◎ 두부: ' + headLines.join(' | '));
 
-  if(v('neck_pain')&&v('neck_pain')!=='없음') lines.push('◎ 경추통증: '+v('neck_pain'));
+  if(v('neck_pain')) lines.push('◎ 경추통증: '+v('neck_pain'));
   
   const lnAbn=LN_KEYS.map((k,i)=>{
-    const val=v(k); if(!val||val==='정상') return null;
+    const val=v(k); if(!val) return null;
     return LN_SHORT[i]+'('+val+')';
   }).filter(Boolean);
   if(lnAbn.length) lines.push('◎ 림프절: '+lnAbn.join(', '));
 
   const abdParts=[];
-  if(v('abd_tension')&&v('abd_tension')!=='정상') abdParts.push(v('abd_tension'));
-  if(v('abd_pain')&&v('abd_pain')!=='없음') abdParts.push('복통('+v('abd_pain')+')');
+  if(v('abd_tension')) abdParts.push('복압/팽만 '+v('abd_tension'));
+  if(v('abd_pain')) abdParts.push('복통 '+v('abd_pain'));
   const abdF=vf('abd_findings');
-  if(abdF&&abdF!=='이상 없음') abdParts.push(abdF+(m('abd_findings')?' ('+m('abd_findings')+')':''));
+  if(abdF) abdParts.push('촉진 소견('+abdF+(m('abd_findings')?' ('+m('abd_findings')+')':'')+')');
   if(abdParts.length) lines.push('◎ 복부: '+abdParts.join(', '));
 
-  if(vf('skin')&&vf('skin')!=='정상') lines.push('◎ 피부/피모: '+vf('skin'));
-  if(v('masses_yn')==='있음') lines.push('◎ 종괴: '+(m('masses_detail')||'상세내용 없음'));
-  if(vf('repro')&&vf('repro')!=='정상') lines.push('◎ 생식기: '+vf('repro'));
+  const skinParts=[];
+  if(vf('haircoat')) skinParts.push('피모('+vf('haircoat')+')');
+  if(vf('skin')) skinParts.push('피부 병변('+vf('skin')+(m('skin')?' ('+m('skin')+')':'')+')');
+  if(skinParts.length) lines.push('◎ 피부/피모: '+skinParts.join(', '));
 
-  if(lines.length<=4) lines.push('\n※ 그 외 특이소견 없음');
+  if(v('masses_yn')==='있음') {
+      lines.push('◎ 종괴: '+(m('masses_detail')||'상세내용 없음'));
+  } else if (v('masses_yn')==='없음') {
+      lines.push('◎ 종괴: 없음');
+  }
+
+  if(vf('repro')) lines.push('◎ 생식기: '+vf('repro')+(m('repro')?' ('+m('repro')+')':''));
 
   return lines.join('\n');
 }
