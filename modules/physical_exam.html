@@ -4,15 +4,125 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>신체검사 — 성심동물의료센터 EMR</title>
+<style>
+  :root {
+    --primary: #4f46e5; --primary-hover: #4338ca;
+    --bg-main: #f8fafc; --bg-pane: #ffffff;
+    --text-main: #0f172a; --text-muted: #64748b;
+    --border: #e2e8f0; --accent: #f1f5f9;
+    --hdr-bg: #1e293b; --hdr-text: #ffffff;
+    --radius: 8px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+  body { background: var(--bg-main); color: var(--text-main); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+  
+  .app-header { background: var(--hdr-bg); color: var(--hdr-text); height: 56px; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; z-index: 100; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+  .hdr-left { display: flex; align-items: center; text-decoration: none; color: inherit; gap: 12px; cursor: pointer; }
+  .hdr-logo { height: 32px; width: auto; object-fit: contain; }
+  .hdr-div { width: 1px; height: 18px; background: rgba(255,255,255,0.3); }
+  .hdr-title { font-size: 16px; font-weight: 600; letter-spacing: -0.02em; }
+  .hdr-right { display: flex; align-items: center; gap: 12px; min-width: 180px; }
+  .prog-text { font-size: 12px; color: rgba(255,255,255,0.8); white-space: nowrap; text-align: right; width: 70px; }
+  .prog-bg { flex: 1; height: 6px; background: rgba(255,255,255,0.2); border-radius: 3px; overflow: hidden; }
+  .prog-fill { height: 100%; width: 0%; background: #10b981; transition: width 0.2s ease; }
 
-<link rel="stylesheet" href="../css/common.css">
+  .page { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+  .pt-bar { background: var(--bg-pane); border-bottom: 1px solid var(--border); height: 52px; display: flex; align-items: center; padding: 0 20px; gap: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.02); }
+  .pt-label { font-size: 13px; font-weight: 700; color: var(--text-main); margin-right: 8px; background: var(--accent); padding: 4px 8px; border-radius: 4px; }
+  .pt-field { display: flex; align-items: center; gap: 6px; }
+  .pt-field label { font-size: 12px; font-weight: 600; color: var(--text-muted); white-space: nowrap; }
+  .pt-field input, .pt-field select { height: 32px; border: 1px solid var(--border); border-radius: 6px; padding: 0 8px; font-size: 13px; color: var(--text-main); outline: none; transition: border-color 0.15s; background: #fff; }
+  .pt-field input:focus, .pt-field select:focus { border-color: var(--primary); }
+
+  .btn { height: 34px; padding: 0 14px; background: var(--primary); color: #fff; border: none; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 4px; transition: background 0.15s; white-space: nowrap; }
+  .btn:hover { background: var(--primary-hover); }
+  .btn-sec { background: #fff; color: #475569; border: 1px solid var(--border); }
+  .btn-sec:hover { background: #f8fafc; border-color: #cbd5e1; }
+
+  .main-layout { flex: 1; display: flex; overflow: hidden; }
+  .pane-left { flex: 1.2; background: var(--bg-pane); border-right: 1px solid var(--border); overflow-y: auto; padding: 24px; display: flex; flex-direction: column; gap: 24px; }
+  .pane-right { flex: 0.8; background: #f1f5f9; padding: 20px; display: flex; flex-direction: column; }
+
+  .sec { background: #fff; border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
+  .sec-title { font-size: 15px; font-weight: 700; color: #1e293b; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid #f1f5f9; padding-bottom: 10px; }
+  .sec-title span.en { font-size: 11px; font-weight: 500; color: var(--text-muted); margin-left: auto; font-family: monospace; }
+  
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+  .grid-5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+
+  .f-group { display: flex; flex-direction: column; gap: 6px; position: relative; }
+  .f-group label { font-size: 12px; font-weight: 600; color: #475569; }
+  
+  .unit-box { position: relative; display: flex; align-items: center; }
+  .unit-box input { width: 100%; height: 36px; padding: 0 32px 0 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; outline: none; transition: all 0.15s; }
+  .unit-box input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(79,70,229,0.1); }
+  .unit-box .unit { position: absolute; right: 10px; font-size: 11px; font-weight: 600; color: var(--text-muted); pointer-events: none; }
+  .unit-box .calc-val { position: absolute; left: 10px; bottom: -18px; font-size: 11px; font-weight: 600; color: var(--primary); display: none; }
+
+  .tog-row { display: flex; gap: 4px; background: #f8fafc; padding: 3px; border-radius: 6px; border: 1px solid var(--border); }
+  .tog { flex: 1; height: 30px; background: none; border: none; font-size: 12px; font-weight: 600; color: #64748b; border-radius: 4px; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+  .tog:hover { background: rgba(0,0,0,0.03); color: #334155; }
+  .tog.active { background: #fff; color: var(--primary); box-shadow: 0 1px 3px rgba(0,0,0,0.1); border: 1px solid rgba(0,0,0,0.02); }
+  .tog.active.abn { background: #fef2f2; color: #ef4444; border-color: #fee2e2; }
+
+  .chip-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 6px; }
+  .chip { display: flex; align-items: center; justify-content: center; height: 32px; border: 1px solid var(--border); border-radius: 6px; background: #fff; font-size: 12px; font-weight: 500; color: #475569; cursor: pointer; transition: all 0.15s; user-select: none; padding: 0 6px; text-align: center; }
+  .chip:hover { border-color: #cbd5e1; background: #f8fafc; }
+  .chip input { display: none; }
+  .chip.active { background: #f5f3ff; color: var(--primary); border-color: #ddd6fe; font-weight: 600; }
+  .chip.active.abn { background: #fef2f2; color: #ef4444; border-color: #fee2e2; }
+
+  .mi { width: 100%; height: 34px; border: 1px solid var(--border); border-radius: 6px; padding: 0 10px; font-size: 12px; outline: none; margin-top: 6px; transition: border-color 0.15s; }
+  .mi:focus { border-color: var(--primary); }
+
+  .ln-row { display: flex; align-items: center; padding: 8px 12px; background: #f8fafc; border-radius: 6px; border: 1px solid var(--border); margin-bottom: 6px; gap: 12px; }
+  .ln-row:last-child { margin-bottom: 0; }
+  .ln-name { font-size: 12px; font-weight: 600; color: #334155; min-width: 50px; }
+  .ln-opt-row { display: flex; gap: 4px; flex: 1; }
+  .ln-opt { flex: 1; height: 28px; background: #fff; border: 1px solid var(--border); font-size: 11px; font-weight: 600; color: #64748b; border-radius: 4px; cursor: pointer; transition: all 0.15s; }
+  .ln-opt:hover { background: #f1f5f9; }
+  .ln-opt.active { background: #fff; color: var(--primary); border-color: var(--primary); box-shadow: 0 1px 2px rgba(79,70,229,0.05); }
+  .ln-opt.active.abn { background: #fef2f2; color: #ef4444; border-color: #fca5a5; }
+
+  .out-box { flex: 1; display: flex; flex-direction: column; background: #fff; border: 1px solid var(--border); border-radius: var(--radius); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); overflow: hidden; }
+  .out-hdr { background: #f8fafc; border-bottom: 1px solid var(--border); height: 44px; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; }
+  .out-hdr span { font-size: 13px; font-weight: 700; color: #334155; }
+  .out-stat { font-size: 11px; font-weight: 600; color: #10b981; background: #ecfdf5; padding: 2px 8px; border-radius: 10px; }
+  #outTa { flex: 1; width: 100%; border: none; resize: none; padding: 16px; font-family: "Courier New", Courier, monospace; font-size: 13px; line-height: 1.5; color: #1e293b; outline: none; background: #fff; }
+
+  .sc-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; background: #f8fafc; padding: 6px; border-radius: 6px; border: 1px solid var(--border); }
+  .sc-lbl { font-size: 12px; font-weight: 600; color: #475569; width: 80px; text-align: center; }
+  .sc-bar { flex: 1; display: flex; gap: 2px; }
+  .sc-btn { flex: 1; height: 26px; background: #fff; border: 1px solid var(--border); font-size: 11px; font-weight: 600; color: #64748b; border-radius: 4px; cursor: pointer; }
+  .sc-btn:hover { background: #f1f5f9; }
+  .sc-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+  .sc-badge { min-width: 32px; height: 22px; background: #e2e8f0; border-radius: 4px; font-size: 11px; font-weight: 700; color: #475569; display: inline-flex; align-items: center; justify-content: center; }
+  .sc-badge.active { background: #dee2ff; color: var(--primary); }
+
+  .er { border: 1px solid var(--border); border-radius: 6px; padding: 12px; margin-bottom: 8px; background: #fff; transition: all 0.2s; }
+  .er-hdr { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  .er-title { font-size: 12px; font-weight: 700; color: #334155; }
+  .er-ctrls { display: flex; gap: 4px; }
+  .er-btn { padding: 2px 8px; height: 24px; background: #f1f5f9; border: 1px solid var(--border); border-radius: 4px; font-size: 11px; font-weight: 600; color: #475569; cursor: pointer; }
+  .er-btn:hover { background: #e2e8f0; }
+  .er-btn.active { background: #fef2f2; color: #ef4444; border-color: #fca5a5; }
+  .er-btn.active.norm { background: #f0fdf4; color: #16a34a; border-color: #bbf7d0; }
+  .er-body { display: none; grid-template-columns: repeat(2, 1fr); gap: 6px; margin-top: 8px; border-top: 1px dashed #e2e8f0; padding-top: 8px; }
+  .er.r-noted { border-color: #cbd5e1; background: #f8fafc; }
+  .er.r-abn { border-color: #fca5a5; background: #fff5f5; }
+  .er.r-abn .er-title { color: #c53030; }
+
+  .ni { width: 100%; height: 32px; border: 1px solid var(--border); border-radius: 6px; padding: 0 8px; font-size: 12px; outline: none; text-align: center; transition: all 0.15s; font-weight: 600; color: #334155; }
+  .ni:focus { border-color: var(--primary); background: #fff; }
+  .ni.has-val { background: #f5f3ff; border-color: #ddd6fe; color: var(--primary); }
+</style>
 
 <script src="../js/api.js"></script>
-
 </head>
 <body>
 
-<header class=\"app-header\">
+<header class="app-header">
   <a href="../index.html" class="hdr-left">
     <img src="../로고_사진.png" alt="성심동물의료센터" class="hdr-logo">
     <div class="hdr-div"></div>
@@ -20,7 +130,7 @@
   </a>
   <div class="hdr-right">
     <span class="prog-text" id="progText">0 항목</span>
-    <div class="prog-bg"><div class=\"prog-fill\" id=\"progFill\"></div></div>
+    <div class="prog-bg"><div class="prog-fill" id="progFill"></div></div>
   </div>
 </header>
 
@@ -50,7 +160,371 @@
 
   <div class="main-layout">
     <div class="pane-left" id="formPane">
+
+      <div class="sec">
+        <div class="sec-title">Vital Signs <span class="en">VITAL_SIGNS</span></div>
+        <div class="grid-2" style="row-gap:12px;">
+          <div class="f-group">
+            <label>체온 (Temperature)</label>
+            <div class="unit-box">
+              <input type="number" step="0.1" id="i-temp" placeholder="0.0" oninput="onNumInput('temp', this)">
+              <span class="unit">°C</span>
+            </div>
+          </div>
+          <div class="f-group">
+            <label>심박수 (Heart Rate)</label>
+            <div class="unit-box">
+              <input type="number" id="i-hr" placeholder="0" oninput="onNumInput('hr', this)">
+              <span class="unit">bpm</span>
+              <span class="calc-val" id="c-hr">—</span>
+            </div>
+          </div>
+          <div class="f-group">
+            <label>호흡수 (Respiratory Rate)</label>
+            <div class="unit-box">
+              <input type="number" id="i-rr" placeholder="0" oninput="onNumInput('rr', this)">
+              <span class="unit">/min</span>
+              <span class="calc-val" id="c-rr">—</span>
+            </div>
+          </div>
+          <div class="f-group">
+            <label>수축기 혈압 (Systolic BP)</label>
+            <div class="unit-box">
+              <input type="number" id="i-bp" placeholder="0" oninput="onNumInput('bp', this)">
+              <span class="unit">mmHg</span>
+            </div>
+          </div>
+        </div>
       </div>
+
+      <div class="sec">
+        <div class="sec-title">일반 상태 및 점막 <span class="en">GENERAL_STATUS</span></div>
+        <div class="grid-2" style="row-gap:12px; margin-bottom:12px;">
+          <div class="f-group">
+            <label>Mentation</label>
+            <div class="tog-row">
+              <button class="tog" onclick="onTog('mentation','BAR',this)">BAR</button>
+              <button class="tog" onclick="onTog('mentation','QAR',this)">QAR</button>
+              <button class="tog" onclick="onTog('mentation','Depressed',this,true)">Dep</button>
+              <button class="tog" onclick="onTog('mentation','Stupor/Coma',this,true)">Stupor</button>
+            </div>
+          </div>
+          <div class="f-group">
+            <label>자세 및 보행</label>
+            <div class="tog-row">
+              <button class="tog" onclick="onTog('posture','정상',this)">정상</button>
+              <button class="tog" onclick="onTog('posture','이상인정',this,true)">이상</button>
+            </div>
+          </div>
+        </div>
+        <div class="grid-3" style="margin-bottom:12px;">
+          <div class="f-group">
+            <label>점막 색 (MM Color)</label>
+            <div class="tog-row">
+              <button class="tog" onclick="onTog('mm_color','핑크',this)">Pink</button>
+              <button class="tog" onclick="onTog('mm_color','창백',this,true)">Pale</button>
+              <button class="tog" onclick="onTog('mm_color','황달/충혈',this,true)">Abn</button>
+            </div>
+          </div>
+          <div class="f-group">
+            <label>점막 습도 (MM Moist)</label>
+            <div class="tog-row">
+              <button class="tog" onclick="onTog('mm_moist','촉촉',this)">Moist</button>
+              <button class="tog" onclick="onTog('mm_moist','끈적/건조',this,true)">Dry</button>
+            </div>
+          </div>
+          <div class="f-group">
+            <label>CRT</label>
+            <div class="tog-row">
+              <button class="tog" onclick="onTog('crt','1-2sec',this)">1-2s</button>
+              <button class="tog" onclick="onTog('crt','지연(>2s)',this,true)">>2s</button>
+            </div>
+          </div>
+        </div>
+        <div class="f-group">
+          <label>공격성 / 보정 난이도</label>
+          <div class="tog-row" style="max-width:280px;">
+            <button class="tog" onclick="onTog('aggression','없음',this)">없음</button>
+            <button class="tog" onclick="onTog('aggression','중등도',this)">중등도</button>
+            <button class="tog" onclick="onTog('aggression','심함',this,true)">심함</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="sec">
+        <div class="sec-title">신체 지수 평가 <span class="en">BODY_CONDITION</span></div>
+        <div class="f-group" style="margin-bottom:14px;">
+          <label>BCS (Body Condition Score) : <span id="bcs-lbl" style="color:var(--primary); font-weight:700;">— / 9</span></label>
+          <div class="grid-9" style="display:grid; grid-template-columns:repeat(9,1fr); gap:4px; margin-top:4px;">
+            <button class="tog bcs-b" style="height:32px;" onclick="onBcs(1,this)">1</button>
+            <button class="tog bcs-b" style="height:32px;" onclick="onBcs(2,this)">2</button>
+            <button class="tog bcs-b" style="height:32px;" onclick="onBcs(3,this)">3</button>
+            <button class="tog bcs-b" style="height:32px;" onclick="onBcs(4,this)">4</button>
+            <button class="tog bcs-b" style="height:32px;" onclick="onBcs(5,this)">5</button>
+            <button class="tog bcs-b" style="height:32px;" onclick="onBcs(6,this)">6</button>
+            <button class="tog bcs-b" style="height:32px;" onclick="onBcs(7,this)">7</button>
+            <button class="tog bcs-b" style="height:32px;" onclick="onBcs(8,this)">8</button>
+            <button class="tog bcs-b" style="height:32px;" onclick="onBcs(9,this)">9</button>
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="f-group">
+            <label>MCS (Muscle Condition Score)</label>
+            <div class="tog-row">
+              <button class="tog mcs-opt" onclick="onMcs('정상',this)">정상</button>
+              <button class="tog mcs-opt" onclick="onMcs('경도손실',this,true)">경도손실</button>
+              <button class="tog mcs-opt" onclick="onMcs('중등도손실',this,true)">중등도</button>
+              <button class="tog mcs-opt" onclick="onMcs('심한손실',this,true)">심함</button>
+            </div>
+          </div>
+          <div class="f-group">
+            <label>탈수 상태 (Hydration)</label>
+            <div class="tog-row">
+              <button class="tog hyd-opt" onclick="onHyd('정상',this)">정상(주름즉시복원)</button>
+              <button class="tog hyd-opt" onclick="onHyd('경도(<5%)',this,true)">경도</button>
+              <button class="tog hyd-opt" onclick="onHyd('중등도(6-9%)',this,true)">중등도</button>
+              <button class="tog hyd-opt" onclick="onHyd('심함(>10%)',this,true)">심함</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sec">
+        <div class="sec-title">흉부 청진 소견 <span class="en">AUSCULTATION</span></div>
+        <div class="grid-2" style="margin-bottom:12px; align-items: flex-start;">
+          <div class="f-group">
+            <label>심리듬 (Heart Rhythm)</label>
+            <div class="tog-row">
+              <button class="tog" onclick="onTog('heart_rhythm','규칙(Regular)',this)">규칙</button>
+              <button class="tog" onclick="onTog('heart_rhythm','부정맥/분마율',this,true)">부정맥/이상</button>
+            </div>
+          </div>
+          <div class="f-group">
+            <label>심잡음 (Murmur)</label>
+            <div class="tog-row">
+              <button class="tog" onclick="onMurmur('없음',this)">없음</button>
+              <button class="tog" onclick="onMurmur('있음',this,true)">청진됨(+)</button>
+            </div>
+            <div id="murmur-grade" style="display:none; margin-top:8px; background:#fff; border:1px solid var(--border); padding:6px; border-radius:6px;">
+              <label style="font-size:11px; margin-bottom:4px; display:block;">Murmur Grade (Levine Scale)</label>
+              <div class="sc-bar">
+                <button class="sc-btn" onclick="onMurmurGrade('1',this)">G1</button>
+                <button class="sc-btn" onclick="onMurmurGrade('2',this)">G2</button>
+                <button class="sc-btn" onclick="onMurmurGrade('3',this)">G3</button>
+                <button class="sc-btn" onclick="onMurmurGrade('4',this)">G4</button>
+                <button class="sc-btn" onclick="onMurmurGrade('5',this)">G5</button>
+                <button class="sc-btn" onclick="onMurmurGrade('6',this)">G6</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="f-group">
+            <label>호흡 노력 (Respiratory Effort)</label>
+            <div class="tog-row">
+              <button class="tog" onclick="onTog('resp_effort','정상',this)">정상</button>
+              <button class="tog" onclick="onTog('resp_effort','복식/속박호흡',this,true)">노력성/이상</button>
+            </div>
+          </div>
+          <div class="f-group">
+            <label>폐 청진 소견 (Lung Sounds)</label>
+            <div class="tog-row">
+              <button class="tog" onclick="onTog('lungs','정상',this)">정상</button>
+              <button class="tog" onclick="onTog('lungs','이상 청진',this,true)">이상 소견</button>
+            </div>
+          </div>
+        </div>
+        <div class="chip-grid" id="lung-chips" style="display:none; margin-top:10px;">
+          <label class="chip" onclick="toggleChip('lungs','수포음(Crackles)',this,true)"><input type="checkbox">Crackles</label>
+          <label class="chip" onclick="toggleChip('lungs','천명음(Wheezes)',this,true)"><input type="checkbox">Wheezes</label>
+          <label class="chip" onclick="toggleChip('lungs','호흡음 감소/소실',this,true)"><input type="checkbox">음소실</label>
+          <label class="chip" onclick="toggleChip('lungs','기타',this,true)"><input type="checkbox">기타</label>
+        </div>
+        <input type="text" id="m-lungs" class="mi" placeholder="폐 청진 추가 메모 사항 기술" oninput="onMemo('lungs',this)" style="display:none;">
+      </div>
+
+      <div class="sec">
+        <div class="sec-title">두부 및 안이비구강 검사 <span class="en">HEAD_ENT</span></div>
+        <div class="grid-2" style="row-gap:12px;">
+          <div class="f-group">
+            <label>안과 검사 (Eyes)</label>
+            <div class="tog-row"><button class="tog" onclick="onEntTog('eyes','정상',this)">정상</button><button class="tog" onclick="onEntTog('eyes','이상',this,true)">이상 소견</button></div>
+            <div class="chip-grid" id="ey-c" style="display:none; margin-top:6px;">
+              <label class="chip" onclick="toggleChip('eyes','결막충혈/부종',this,true)"><input type="checkbox">충혈/부종</label>
+              <label class="chip" onclick="toggleChip('eyes','안구분비물(화농성)',this,true)"><input type="checkbox">농성분비물</label>
+              <label class="chip" onclick="toggleChip('eyes','각막혼탁/궤양의심',this,true)"><input type="checkbox">각막이상</label>
+              <label class="chip" onclick="toggleChip('eyes','백내장/핵경화',this,true)"><input type="checkbox">수정체이상</label>
+              <label class="chip" onclick="toggleChip('eyes','기타',this,true)"><input type="checkbox">기타</label>
+            </div>
+            <input type="text" id="m-eyes" class="mi" placeholder="안과 메모" oninput="onMemo('eyes',this)" style="display:none;">
+          </div>
+
+          <div class="f-group">
+            <label>이과 검사 (Ears)</label>
+            <div class="tog-row"><button class="tog" onclick="onEntTog('ears','정상',this)">정상</button><button class="tog" onclick="onEntTog('ears','이상',this,true)">이상 소견</button></div>
+            <div class="chip-grid" id="ea-c" style="display:none; margin-top:6px;">
+              <label class="chip" onclick="toggleChip('ears','발적/부종',this,true)"><input type="checkbox">이도발적</label>
+              <label class="chip" onclick="toggleChip('ears','분비물(갈색/흑색)',this,true)"><input type="checkbox">갈색지루성</label>
+              <label class="chip" onclick="toggleChip('ears','분비물(화농성)',this,true)"><input type="checkbox">농성분비물</label>
+              <label class="chip" onclick="toggleChip('ears','협착/증식',this,true)"><input type="checkbox">이도협착</label>
+              <label class="chip" onclick="toggleChip('ears','기타',this,true)"><input type="checkbox">기타</label>
+            </div>
+            <input type="text" id="m-ears" class="mi" placeholder="이과 메모" oninput="onMemo('ears',this)" style="display:none;">
+          </div>
+
+          <div class="f-group">
+            <label>비강 검사 (Nose)</label>
+            <div class="tog-row"><button class="tog" onclick="onEntTog('nose','정상',this)">정상</button><button class="tog" onclick="onEntTog('nose','이상',this,true)">이상 소견</button></div>
+            <div class="chip-grid" id="no-c" style="display:none; margin-top:6px;">
+              <label class="chip" onclick="toggleChip('nose','콧물(수양성)',this,true)"><input type="checkbox">수양성비루</label>
+              <label class="chip" onclick="toggleChip('nose','콧물(농성/화농)',this,true)"><input type="checkbox">농성비루</label>
+              <label class="chip" onclick="toggleChip('nose','코막힘/협착음',this,true)"><input type="checkbox">코막힘</label>
+              <label class="chip" onclick="toggleChip('nose','건조/과각화',this,true)"><input type="checkbox">비경건조</label>
+              <label class="chip" onclick="toggleChip('nose','기타',this,true)"><input type="checkbox">기타</label>
+            </div>
+            <input type="text" id="m-nose" class="mi" placeholder="비강 메모" oninput="onMemo('nose',this)" style="display:none;">
+          </div>
+
+          <div class="f-group">
+            <label>구강 검사 (Oral)</label>
+            <div class="tog-row"><button class="tog" onclick="onEntTog('oral','정상',this)">정상</button><button class="tog" onclick="onEntTog('oral','이상',this,true)">이상 소견</button></div>
+            <div class="chip-grid" id="or-c" style="display:none; margin-top:6px;">
+              <label class="chip" onclick="toggleChip('oral','치석(중등도 이상)',this,true)"><input type="checkbox">치석심함</label>
+              <label class="chip" onclick="toggleChip('oral','치은염/발적/궤양',this,true)"><input type="checkbox">치은염</label>
+              <label class="chip" onclick="toggleChip('oral','구취(Halitosis)',this,true)"><input type="checkbox">심한구취</label>
+              <label class="chip" onclick="toggleChip('oral','치아결손/파절',this,true)"><input type="checkbox">치아파절</label>
+              <label class="chip" onclick="toggleChip('oral','기타',this,true)"><input type="checkbox">기타</label>
+            </div>
+            <input type="text" id="m-oral" class="mi" placeholder="구강 메모" oninput="onMemo('oral',this)" style="display:none;">
+          </div>
+        </div>
+      </div>
+
+      <div class="sec">
+        <div class="sec-title">표면 림프절 촉진 소견 <span class="en">LYMPH_NODES</span></div>
+        <div id="ln-container">
+          </div>
+      </div>
+
+      <div class="sec">
+        <div class="sec-title">복부 촉진 평가 <span class="en">ABDOMINAL_PALPATION</span></div>
+        <div class="grid-2" style="margin-bottom:12px;">
+          <div class="f-group">
+            <label>복벽 긴장도 / 팽만</label>
+            <div class="tog-row">
+              <button class="tog" onclick="onTog('abd_tension','정상',this)">정상(Soft)</button>
+              <button class="tog" onclick="onTog('abd_tension','긴장/가스팽만',this,true)">긴장/팽만</button>
+            </div>
+          </div>
+          <div class="f-group">
+            <label>복부 통증반응 (Pain)</label>
+            <div class="tog-row">
+              <button class="tog" onclick="onTog('abd_pain','없음',this)">없음(-)</button>
+              <button class="tog" onclick="onTog('abd_pain','명확한 통증',this,true)">통증호소(+)</button>
+            </div>
+          </div>
+        </div>
+        <div class="f-group">
+          <label>장기 촉진 소견</label>
+          <div class="tog-row" style="max-width:240px; margin-bottom:8px;">
+            <button class="tog" onclick="onAbdFindings('이상 없음',this)">이상 없음</button>
+            <button class="tog" onclick="onAbdFindings('이상 소견 촉지',this,true)">특이 소견(+)</button>
+          </div>
+          <div class="chip-grid" id="abd-chips" style="display:none;">
+            <label class="chip" onclick="toggleChip('abd_findings','장관내 가스/분변 정체',this,true)"><input type="checkbox">분변정체</label>
+            <label class="chip" onclick="toggleChip('abd_findings','장기 비대 촉지(비장/신장 등)',this,true)"><input type="checkbox">장기비대</label>
+            <label class="chip" onclick="toggleChip('abd_findings','복강 내 종괴 유사체 촉지',this,true)"><input type="checkbox">종괴의심</label>
+            <label class="chip" onclick="toggleChip('abd_findings','기타',this,true)"><input type="checkbox">기타</label>
+          </div>
+          <input type="text" id="m-abd_findings" class="mi" placeholder="복부 촉진 세부 소견 기록" oninput="onMemo('abd_findings',this)" style="display:none;">
+        </div>
+      </div>
+
+      <div class="sec">
+        <div class="sec-title">근골격계 및 신경계 정형 평가 <span class="en">ORTHO_NEURO</span></div>
+        <div class="grid-2">
+          <div class="f-group">
+            <label>경추 통증반응 (Neck Pain)</label>
+            <div class="tog-row">
+              <button class="tog" onclick="onTog('neck_pain','없음',this)">없음(-)</button>
+              <button class="tog" onclick="onTog('neck_pain','통증 호소',this,true)">통증있음(+)</button>
+            </div>
+          </div>
+          <div class="f-group">
+            <label>경추 가동 범위 (Neck ROM)</label>
+            <div class="tog-row">
+              <button class="tog" onclick="onTog('neck_rom','정상',this)">정상</button>
+              <button class="tog" onclick="onTog('neck_rom','제한/감소',this,true)">가동제한</button>
+            </div>
+          </div>
+        </div>
+        <div style="margin-top:14px;" id="ortho-rows-div">
+          </div>
+      </div>
+
+      <div class="sec">
+        <div class="sec-title">피부 및 피모 검사 <span class="en">INTEGUMENTARY</span></div>
+        <div class="grid-2" style="margin-bottom:12px;">
+          <div class="f-group">
+            <label>피모 상태 (Haircoat)</label>
+            <div class="tog-row">
+              <button class="tog" onclick="onSkinTog('haircoat','정상',this)">정상</button>
+              <button class="tog" onclick="onSkinTog('haircoat','이상',this,true)">이상 소견</button>
+            </div>
+            <div class="chip-grid" id="hc-c" style="display:none; margin-top:6px;">
+              <label class="chip" onclick="toggleChip('haircoat','털 빠짐/탈모(Alopecia)',this,true)"><input type="checkbox">탈모</label>
+              <label class="chip" onclick="toggleChip('haircoat','푸석함/소윤성 저하',this,true)"><input type="checkbox">소윤성저하</label>
+              <label class="chip" onclick="toggleChip('haircoat','기타',this,true)"><input type="checkbox">기타</label>
+            </div>
+          </div>
+          <div class="f-group">
+            <label>피부 병변 (Skin Lesions)</label>
+            <div class="tog-row">
+              <button class="tog" onclick="onSkinTog('skin','정상',this)">이상 없음</button>
+              <button class="tog" onclick="onSkinTog('skin','이상',this,true)">병변 확인</button>
+            </div>
+            <div class="chip-grid" id="sk-c" style="display:none; margin-top:6px;">
+              <label class="chip" onclick="toggleChip('skin','발적/홍반(Erythema)',this,true)"><input type="checkbox">발적/홍반</label>
+              <label class="chip" onclick="toggleChip('skin','각질/비듬(Scale/Crust)',this,true)"><input type="checkbox">각질/비듬</label>
+              <label class="chip" onclick="toggleChip('skin','구진/농포(Papule/Pustule)',this,true)"><input type="checkbox">구진/농포</label>
+              <label class="chip" onclick="toggleChip('skin','태선화/색소침착',this,true)"><input type="checkbox">태선화</label>
+              <label class="chip" onclick="toggleChip('skin','기타',this,true)"><input type="checkbox">기타</label>
+            </div>
+          </div>
+        </div>
+        <input type="text" id="m-skin" class="mi" placeholder="피부 병변 위치 및 특징 상세 기술" oninput="onMemo('skin',this)" style="display:none;">
+      </div>
+
+      <div class="sec">
+        <div class="sec-title">기타 및 생식기계 검사 <span class="en">MASS_REPRO</span></div>
+        <div class="grid-2">
+          <div class="f-group">
+            <label>종괴 유무 (Masses)</label>
+            <div class="tog-row">
+              <button class="tog" onclick="onMass('없음',this)">없음</button>
+              <button class="tog" onclick="onMass('있음',this,true)">확인됨(+)</button>
+            </div>
+            <input type="text" id="m-masses_detail" class="mi" placeholder="종괴 크기, 위치, 촉감 등 기록" oninput="onMemo('masses_detail',this)" style="display:none;">
+          </div>
+          <div class="f-group">
+            <label>외생식기 / 항문 주위</label>
+            <div class="tog-row">
+              <button class="tog" onclick="onReproTog('repro','정상',this)">정상</button>
+              <button class="tog" onclick="onReproTog('repro','이상',this,true)">이상 소견</button>
+            </div>
+            <div class="chip-grid" id="rep-c" style="display:none; margin-top:6px;">
+              <label class="chip" onclick="toggleChip('repro','분비물 확인',this,true)"><input type="checkbox">생식기분비물</label>
+              <label class="chip" onclick="toggleChip('repro','발적/종창/외상',this,true)"><input type="checkbox">발적/종창</label>
+              <label class="chip" onclick="toggleChip('repro','잠복고환(Cryptorchidism)',this,true)"><input type="checkbox">잠복고환</label>
+              <label class="chip" onclick="toggleChip('reproeg','항문낭 저체/염증의심',this,true)"><input type="checkbox">항문낭이상</label>
+              <label class="chip" onclick="toggleChip('repro','기타',this,true)"><input type="checkbox">기타</label>
+            </div>
+            <input type="text" id="m-repro" class="mi" placeholder="생식기계 특이사항 기술" oninput="onMemo('repro',this)" style="display:none;">
+          </div>
+        </div>
+      </div>
+
+    </div>
 
     <div class="pane-right">
       <div class="out-box">
@@ -65,64 +539,247 @@
 </div>
 
 <script>
-// 기존 글로벌 데이터 구조 및 매핑 테이블 유지
+// ==========================================
+// [글로벌 데이터 구조 및 원본 비즈니스 로직 유지]
+// ==========================================
 let species = '';
 let S = {};
 
 const LN_KEYS = ['ln_submand','ln_prescap','ln_axillary','ln_inguinal','ln_popliteal'];
 const LN_SHORT = ['하악','견갑전','액와','서행','오금'];
+const LN_FULL = ['Submandibular (하악)','Prescapular (견갑전)','Axillary (액와)','Inguinal (서행)','Popliteal (오금)'];
 
-// 데이터 입력 여부(검사 시행 여부)를 엄격하게 판단하는 헬퍼 함수
+const ER_KEYS = ['r_patella_med','r_patella_lat','r_drawer','r_collateral'];
+const ER_LABELS = ['슬개골 내측 탈구','슬개골 외측 탈구','전십자인대(Drawer)','측부인대 불안정성'];
+const EX_NAMES = ['LF (좌전지)','RF (우전지)','LR (좌후지)','RR (우후지)'];
+
+// 초기화 시 림프절 및 정형 파트 UI 빌드
+function initDynamicUi() {
+  const lnCont = document.getElementById('ln-container');
+  lnCont.innerHTML = '';
+  LN_KEYS.forEach((k, i) => {
+    const div = document.createElement('div');
+    div.className = 'ln-row';
+    div.innerHTML = `
+      <div class="ln-name">${LN_SHORT[i]}</div>
+      <div class="ln-opt-row">
+        <button class="ln-opt" onclick="onLn('${k}','정상',this)">정상</button>
+        <button class="ln-opt" onclick="onLn('${k}','종대(+)',this,true)">종대</button>
+        <button class="ln-opt" onclick="onLn('${k}','통증(+)',this,true)">통증</button>
+      </div>
+    `;
+    lnCont.appendChild(div);
+  });
+
+  const orthoCont = document.getElementById('ortho-rows-div');
+  orthoCont.innerHTML = '';
+  EX_NAMES.forEach((exName, exIdx) => {
+    const row = document.createElement('div');
+    row.className = 'sc-row';
+    row.innerHTML = `
+      <div class="sc-lbl">${exName}</div>
+      <input type="text" class="ni" id="ni-${exIdx}" placeholder="정상 수동 표기" oninput="onNi(${exIdx}, this)">
+    `;
+    orthoCont.appendChild(row);
+  });
+}
+
+function initData() {
+  S = {};
+  const allKeys = [
+    'temp','hr','rr','bp','mentation','posture','mm_color','mm_moist','crt','aggression',
+    'bcs','mcs','hydration','heart_rhythm','murmur','resp_effort','lungs',
+    'eyes','ears','nose','oral','abd_tension','abd_pain','abd_findings',
+    'neck_pain','neck_rom','haircoat','skin','masses_yn','masses_detail','repro'
+  ].concat(LN_KEYS);
+  allKeys.forEach(k => { S[k] = { value: null, findings: [], memo: '', abnormal: false }; });
+  S['murmur'].grade = null;
+}
+
+// 입력 활성화 검사 헬퍼
 function hasData(k) {
   const s = S[k];
   if (!s) return false;
-  
-  // 1. 단순 value가 존재하는 경우
   if (s.value !== null && s.value !== '') return true;
-  
-  // 2. 체크박스(findings) 배열에 요소가 존재하는 경우
   if (s.findings && s.findings.length > 0) return true;
-  
-  // 3. 주관식 메모가 입력된 경우
   if (s.memo && s.memo.trim() !== '') return true;
-  
-  // 4. 심잡음 Grade가 입력된 경우
   if (k === 'murmur' && s.grade) return true;
-  
   return false;
 }
 
-// 해당 항목이 '비정상(Abnormal)'인지 판별하는 헬퍼 함수
+// 이상 소견 감별 헬퍼
 function isAbn(k) {
   const s = S[k];
   if (!s) return false;
-  
-  // 1. 명시적으로 abnormal 플래그가 활성화된 경우
   if (s.abnormal === true) return true;
-  
-  // 2. value 값이 '정상', '없음'이 아닌 유의미한 값일 경우
-  if (s.value !== null && s.value !== '' && s.value !== '정상' && s.value !== '없음' && s.value !== '규칙(Regular)') {
-    // 특외 예외 케이스 처리
+  if (s.value !== null && s.value !== '' && s.value !== '정상' && s.value !== '없음' && s.value !== '규칙(Regular)' && s.value !== '이상 없음') {
     if (k === 'mentation' && s.value === 'BAR') return false;
     if (k === 'mm_color' && s.value === '핑크') return false;
     if (k === 'mm_moist' && s.value === '촉촉') return false;
     if (k === 'crt' && s.value === '1-2sec') return false;
     return true;
   }
-  
-  // 3. 다중 선택 findings에 '정상'이나 '이상 없음' 외의 항목이 들어간 경우
   if (s.findings && s.findings.length > 0) {
-    const hasTrueAbn = s.findings.some(f => f !== '정상' && f !== '이상 없음');
-    if (hasTrueAbn) return true;
+    if (s.findings.some(f => f !== '정상' && f !== '이상 없음')) return true;
   }
-  
-  // 4. 심잡음이 '있음'으로 설정된 경우
-  if (k === 'murmur' && s.value === '있음') return true;
-  
   return false;
 }
 
-// [핵심 개편] 방법 A: 시스템별 통합 요약 방식 기반 텍스트 생성기
+// UI 컨트롤 핸들러 인터페이스 (원본 동일)
+function onSpecies() {
+  species = document.getElementById('ptSpecies').value;
+  updateOutput();
+}
+function onNumInput(k, input) {
+  S[k].value = input.value || null;
+  S[k].abnormal = false; 
+  if(k==='hr' && input.value) document.getElementById('c-hr').textContent = input.value + ' bpm';
+  if(k==='rr' && input.value) document.getElementById('c-rr').textContent = input.value + ' /min';
+  updateOutput();
+}
+function onTog(k, val, btn, isAbnormal = false) {
+  const p = btn.parentNode;
+  p.querySelectorAll('.tog').forEach(b => b.classList.remove('active','abn'));
+  if (S[k].value === val) { S[k].value = null; S[k].abnormal = false; } 
+  else { S[k].value = val; S[k].abnormal = isAbnormal; btn.classList.add('active'); if(isAbnormal) btn.classList.add('abn'); }
+  updateOutput();
+}
+function onBcs(val, btn) {
+  const p = btn.parentNode; p.querySelectorAll('.tog').forEach(b => b.style.outline = '');
+  if (S['bcs'].value === val) { S['bcs'].value = null; document.getElementById('bcs-lbl').textContent = '— / 9'; } 
+  else { S['bcs'].value = val; btn.style.outline = '2px solid var(--primary)'; document.getElementById('bcs-lbl').textContent = val + ' / 9'; }
+  updateOutput();
+}
+function onMcs(val, btn, isAbnormal = false) {
+  const p = btn.parentNode; p.querySelectorAll('.tog').forEach(b => b.classList.remove('active','abn'));
+  if (S['mcs'].value === val) { S['mcs'].value = null; S['mcs'].abnormal = false; } 
+  else { S['mcs'].value = val; S['mcs'].abnormal = isAbnormal; btn.classList.add('active'); if(isAbnormal) btn.classList.add('abn'); }
+  updateOutput();
+}
+function onHyd(val, btn, isAbnormal = false) {
+  const p = btn.parentNode; p.querySelectorAll('.tog').forEach(b => b.classList.remove('active','abn'));
+  if (S['hydration'].value === val) { S['hydration'].value = null; S['hydration'].abnormal = false; } 
+  else { S['hydration'].value = val; S['hydration'].abnormal = isAbnormal; btn.classList.add('active'); if(isAbnormal) btn.classList.add('abn'); }
+  updateOutput();
+}
+function onMurmur(val, btn, isAbnormal = false) {
+  const p = btn.parentNode; p.querySelectorAll('.tog').forEach(b => b.classList.remove('active','abn'));
+  const gDiv = document.getElementById('murmur-grade');
+  if (S['murmur'].value === val) { S['murmur'].value = null; S['murmur'].abnormal = false; gDiv.style.display = 'none'; } 
+  else {
+    S['murmur'].value = val; S['murmur'].abnormal = isAbnormal; btn.classList.add('active'); if(isAbnormal) btn.classList.add('abn');
+    gDiv.style.display = val === '있음' ? 'block' : 'none';
+  }
+  updateOutput();
+}
+function onMurmurGrade(g, btn) {
+  const p = btn.parentNode; p.querySelectorAll('.sc-btn').forEach(b => b.classList.remove('active'));
+  if (S['murmur'].grade === g) S['murmur'].grade = null; 
+  else { S['murmur'].grade = g; btn.classList.add('active'); }
+  updateOutput();
+}
+function onLn(k, val, btn, isAbnormal = false) {
+  const p = btn.parentNode; p.querySelectorAll('.ln-opt').forEach(b => b.classList.remove('active','abn'));
+  if (S[k].value === val) { S[k].value = null; S[k].abnormal = false; } 
+  else { S[k].value = val; S[k].abnormal = isAbnormal; btn.classList.add('active'); if(isAbnormal) btn.classList.add('abn'); }
+  updateOutput();
+}
+function onAbdFindings(val, btn, isAbnormal = false) {
+  const p = btn.parentNode; p.querySelectorAll('.tog').forEach(b => b.classList.remove('active','abn'));
+  const cDiv = document.getElementById('abd-chips'), mInp = document.getElementById('m-abd_findings');
+  if (S['abd_findings'].value === val) { S['abd_findings'].value = null; S['abd_findings'].abnormal = false; cDiv.style.display = 'none'; mInp.style.display = 'none'; } 
+  else {
+    S['abd_findings'].value = val; S['abd_findings'].abnormal = isAbnormal; btn.classList.add('active'); if(isAbnormal) btn.classList.add('abn');
+    cDiv.style.display = val === '이상 소견 촉지' ? 'grid' : 'none'; mInp.style.display = val === '이상 소견 촉지' ? 'block' : 'none';
+  }
+  updateOutput();
+}
+function onEntTog(k, val, btn, isAbnormal = false) {
+  const p = btn.parentNode; p.querySelectorAll('.tog').forEach(b => b.classList.remove('active','abn'));
+  const prefix = k === 'eyes' ? 'ey' : k === 'ears' ? 'ea' : k === 'nose' ? 'no' : 'or';
+  const cDiv = document.getElementById(prefix + '-c'), mInp = document.getElementById('m-' + k);
+  if (S[k].value === val) { S[k].value = null; S[k].abnormal = false; if(cDiv) cDiv.style.display = 'none'; if(mInp) mInp.style.display = 'none'; } 
+  else {
+    S[k].value = val; S[k].abnormal = isAbnormal; btn.classList.add('active'); if(isAbnormal) btn.classList.add('abn');
+    if(cDiv) cDiv.style.display = val === '이상' ? 'grid' : 'none'; if(mInp) mInp.style.display = val === '이상' ? 'block' : 'none';
+  }
+  updateOutput();
+}
+function onSkinTog(k, val, btn, isAbnormal = false) {
+  const p = btn.parentNode; p.querySelectorAll('.tog').forEach(b => b.classList.remove('active','abn'));
+  const prefix = k === 'haircoat' ? 'hc' : 'sk';
+  const cDiv = document.getElementById(prefix + '-c'), mInp = document.getElementById('m-skin');
+  if (S[k].value === val) { S[k].value = null; S[k].abnormal = false; if(cDiv) cDiv.style.display = 'none'; if(k === 'skin') mInp.style.display = 'none'; } 
+  else {
+    S[k].value = val; S[k].abnormal = isAbnormal; btn.classList.add('active'); if(isAbnormal) btn.classList.add('abn');
+    if(cDiv) cDiv.style.display = val === '이상' ? 'grid' : 'none'; if(k === 'skin' && val === '이상') mInp.style.display = 'block';
+  }
+  updateOutput();
+}
+function onReproTog(k, val, btn, isAbnormal = false) {
+  const p = btn.parentNode; p.querySelectorAll('.tog').forEach(b => b.classList.remove('active','abn'));
+  const cDiv = document.getElementById('rep-c'), mInp = document.getElementById('m-repro');
+  if (S[k].value === val) { S[k].value = null; S[k].abnormal = false; cDiv.style.display = 'none'; mInp.style.display = 'none'; } 
+  else {
+    S[k].value = val; S[k].abnormal = isAbnormal; btn.classList.add('active'); if(isAbnormal) btn.classList.add('abn');
+    cDiv.style.display = val === '이상' ? 'grid' : 'none'; mInp.style.display = val === '이상' ? 'block' : 'none';
+  }
+  updateOutput();
+}
+function onMass(val, btn, isAbnormal = false) {
+  const p = btn.parentNode; p.querySelectorAll('.tog').forEach(b => b.classList.remove('active','abn'));
+  const mInp = document.getElementById('m-masses_detail');
+  if (S['masses_yn'].value === val) { S['masses_yn'].value = null; S['masses_yn'].abnormal = false; mInp.style.display = 'none'; } 
+  else {
+    S['masses_yn'].value = val; S['masses_yn'].abnormal = isAbnormal; btn.classList.add('active'); if(isAbnormal) btn.classList.add('abn');
+    mInp.style.display = val === '있음' ? 'block' : 'none';
+  }
+  updateOutput();
+}
+function toggleChip(k, val, chip, isAbnormal = false) {
+  let fArr = S[k].findings;
+  if (fArr.includes(val)) { fArr = fArr.filter(x => x !== val); chip.classList.remove('active','abn'); } 
+  else { fArr.push(val); chip.classList.add('active'); if(isAbnormal) chip.classList.add('abn'); }
+  S[k].findings = fArr;
+  updateOutput();
+}
+function onMemo(k, input) { S[k].memo = input.value; updateOutput(); }
+
+let niValues = ['','','',''];
+function onNi(idx, input) {
+  niValues[idx] = input.value.trim();
+  if(niValues[idx]) input.classList.add('has-val'); else input.classList.remove('has-val');
+  updateOutput();
+}
+
+function clearAll() {
+  initData();
+  niValues = ['','','',''];
+  document.getElementById('ptName').value = '';
+  document.getElementById('ptSpecies').value = '';
+  document.querySelectorAll('.tog').forEach(b=>b.className='tog');
+  document.querySelectorAll('.chip').forEach(c=>{c.className='chip'; if(c.querySelector('input')) c.querySelector('input').checked=false;});
+  document.querySelectorAll('.mcs-opt').forEach(o=>o.className='mcs-opt');
+  document.querySelectorAll('.hyd-opt').forEach(o=>o.className='hyd-opt');
+  document.querySelectorAll('.bcs-b').forEach(b=>b.style.outline='');
+  document.querySelectorAll('.ni').forEach(i=>{i.value=''; i.className='ni';});
+  document.querySelectorAll('.mi').forEach(t=>{t.value=''; t.style.display='none';});
+  document.getElementById('bcs-lbl').textContent='— / 9';
+  document.getElementById('c-hr').textContent='—';
+  document.getElementById('c-rr').textContent='—';
+  document.getElementById('murmur-grade').style.display='none';
+  document.getElementById('lung-chips').style.display='none';
+  document.getElementById('ey-c').style.display='none'; document.getElementById('ea-c').style.display='none';
+  document.getElementById('no-c').style.display='none'; document.getElementById('or-c').style.display='none';
+  document.getElementById('abd-chips').style.display='none'; document.getElementById('rep-c').style.display='none';
+  document.getElementById('hc-c').style.display='none'; document.getElementById('sk-c').style.display='none';
+  initDynamicUi();
+  updateOutput();
+}
+
+// ==========================================
+// [핵심 타격 교체 복구 영역] - 방법 A 시스템화 
+// ==========================================
 function buildText() {
   const name = document.getElementById('ptName').value || '—';
   const sp = species === 'dog' ? '개' : species === 'cat' ? '고양이' : '—';
@@ -145,7 +802,7 @@ function buildText() {
   lines.push(`[Physical Exam] ${dt} / ${name} (${sp})`);
   lines.push('--------------------------------------------------');
 
-  // 1. Vital Signs & General Mentation (필수 활력징후 및 기본 상태)
+  // 1. Vital Signs & General (기본 활력 징후)
   const tV = v('temp') ? S['temp'].value + '°C' : '—';
   const hV = v('hr') ? v('hr') + 'bpm' : '—';
   const rV = v('rr') ? v('rr') + '/min' : '—';
@@ -164,7 +821,7 @@ function buildText() {
   lines.push(`  [MM/CRT] 점막색(${mmC}), 습도(${mmM}), CRT(${crtV})`);
   lines.push('');
 
-  // 2. 계통별 시스템 정의 (검사 여부 역추적 및 축약 처리 모델)
+  // 2. 계통별 구조 요약 정의 객체
   const systems = [
     {
       name: '심혈관계 (Cardiovascular)',
@@ -214,17 +871,7 @@ function buildText() {
       }
     },
     {
-      name: '근골격/신경계 (Musculoskeletal/Nerve)',
-      keys: ['neck_pain', 'neck_rom'],
-      build: () => {
-        const parts = [];
-        if (v('neck_pain') && v('neck_pain') !== '없음') parts.push(`경추통증: ${v('neck_pain')}`);
-        if (v('neck_rom') && v('neck_rom') !== '정상') parts.push(`ROM: ${v('neck_rom')}`);
-        return parts.join(', ');
-      }
-    },
-    {
-      name: '림프절 (Lymph Nodes)',
+      name: '림프절 촉진 (Lymph Nodes)',
       keys: LN_KEYS,
       build: () => {
         return LN_KEYS.map((k, i) => {
@@ -241,7 +888,23 @@ function buildText() {
         if (v('abd_tension') && v('abd_tension') !== '정상') parts.push(`복압/팽만: ${v('abd_tension')}`);
         if (v('abd_pain') && v('abd_pain') !== '없음') parts.push(`복통: ${v('abd_pain')}`);
         const abdF = vf('abd_findings');
-        if (abdF && abdF !== '이상 없음') parts.push(`촉진 소견: ${abdF}${m('abd_findings') ? ` (${m('abd_findings')})` : ''}`);
+        if (abdF && abdF !== '이상 없음') parts.push(`촉진: ${abdF}${m('abd_findings') ? ` (${m('abd_findings')})` : ''}`);
+        return parts.join(', ');
+      }
+    },
+    {
+      name: '근골격/신경계 (Musculoskeletal/Nerve)',
+      keys: ['neck_pain', 'neck_rom'],
+      build: () => {
+        const parts = [];
+        if (v('neck_pain') && v('neck_pain') !== '없음') parts.push(`경추통증: ${v('neck_pain')}`);
+        if (v('neck_rom') && v('neck_rom') !== '정상') parts.push(`ROM: ${v('neck_rom')}`);
+        
+        // 수동 입력 사지 정형외과 텍스트 병합
+        const orthoParts = [];
+        niValues.forEach((val, idx) => { if(val) orthoParts.push(`${EX_NAMES[idx]}:${val}`); });
+        if(orthoParts.length) parts.push(`[정형] ${orthoParts.join(' | ')}`);
+
         return parts.join(', ');
       }
     },
@@ -259,7 +922,7 @@ function buildText() {
       name: '종괴 평가 (Masses)',
       keys: ['masses_yn'],
       build: () => {
-        if (v('masses_yn') === '있음') return `종괴 확인됨: ${m('masses_detail') || '상세내용 없음'}`;
+        if (v('masses_yn') === '있음') return `종괴 확인됨: ${m('masses_detail') || '상세설명 없음'}`;
         return '';
       }
     },
@@ -273,24 +936,21 @@ function buildText() {
     }
   ];
 
-  // 각 계통 순회하며 동적 렌더링 진행
   systems.forEach(sys => {
-    // 1단계: 해당 시스템 내의 키 중 단 하나라도 임상가가 터치(입력)했는지 확인
     const filledKeys = sys.keys.filter(hasData);
     
-    // 만약 해당 시스템의 어떤 항목도 검사하지 않았다면 출력하지 않음 (Not Examined)
-    if (filledKeys.length === 0) return;
+    // 정형 수동 입력 데이터 존재 여부 예외 추적 추가
+    const hasOrthoData = sys.name.includes('근골격') && niValues.some(v => v !== '');
 
-    // 2단계: 해당 시스템 내부에 하나라도 이상 소견(Abnormal) 항목이 포착되는지 검사
-    const hasAbnormal = sys.keys.some(k => isAbn(k));
+    if (filledKeys.length === 0 && !hasOrthoData) return; // 검사 미진행 항목 제외 (Not Examined)
+
+    const hasAbnormal = sys.keys.some(k => isAbn(k)) || (sys.name.includes('근골격') && niValues.some(v => v !== '' && !v.includes('정상') && !v.includes('WNL')));
     const dynamicDetail = sys.build();
 
     if (hasAbnormal && dynamicDetail) {
-      // 이상 소견 검출 시: 가독성을 위해 강조 마커(●)와 상세 텍스트 강제 개행 출력
       lines.push(`● [이상] ${sys.name}`);
       lines.push(`   ↳ ${dynamicDetail}`);
     } else {
-      // 모든 하위 항목이 완벽히 정상일 때: 한 줄로 깔끔하게 축약 선언 (WNL)
       lines.push(`○ [정상] ${sys.name}: 특이사항 없음 (WNL)`);
     }
   });
@@ -298,19 +958,44 @@ function buildText() {
   return lines.join('\n');
 }
 
-// 실시간 출력 업데이트 함수 (기존 UI 흐름 유지)
 function updateOutput() {
   const txt = buildText();
   document.getElementById('outTa').value = txt;
-  
-  // 진행률 및 상태 바 연동 로직
+
   let cnt = 0;
   Object.keys(S).forEach(k => { if(hasData(k)) cnt++; });
+  niValues.forEach(v => { if(v) cnt++; });
+
+  const fill = document.getElementById('progFill');
+  if(fill) fill.style.width = Math.min((cnt / 25) * 100, 100) + '%';
   document.getElementById('progText').textContent = `${cnt} 항목 입력됨`;
   document.getElementById('botStat').textContent = cnt > 0 ? '차트 실시간 동기화 중' : '입력 대기';
 }
 
-// 기존 데이터 저장 및 칩 제어 로직 함수들... (기존 자바스크립트 코드 유지)
+function copyText() {
+  const ta = document.getElementById('outTa');
+  ta.select();
+  document.execCommand('copy');
+  
+  const stat = document.getElementById('botStat');
+  stat.textContent = '클립보드 복사 완료!';
+  stat.style.background = '#d1fae5';
+  setTimeout(() => {
+    stat.style.background = '#ecfdf5';
+    updateOutput();
+  }, 1500);
+}
+
+function saveDraft() {}
+
+// 앱 구동 시 자동 로드 진행
+window.onload = function() {
+  initData();
+  initDynamicUi();
+  document.getElementById('ptDate').value = new Date().toISOString().split('T')[0];
+  updateOutput();
+};
 </script>
+
 </body>
 </html>
