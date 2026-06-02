@@ -848,92 +848,262 @@ function buildText(){
   const dt=document.getElementById('ptDate').value||'—';
 
   const v=k=>S[k]?.value??null;
+  const m=k=>S[k]?.memo?.trim()||null;
+
   const f=k=>{
     let fi=S[k]?.findings || [];
     let memo=S[k]?.memo?.trim();
+
     if(fi.includes('기타') && memo) {
       fi = fi.filter(x => x !== '기타');
       fi.push(memo);
     }
-    return fi.length?fi.join(', '):null;
+
+    return fi.length ? fi.join(', ') : null;
   };
-  const m=k=>S[k]?.memo?.trim()||null;
+
   const vf=k=>f(k)||v(k);
 
+  const isNormalKey = k => hasVal(k) && !isAbn(k);
+  const isAbnKey = k => hasVal(k) && isAbn(k);
+
   const lines=[];
+
   lines.push('[신체검사] '+dt+' / '+name+' ('+sp+')');
   lines.push('');
 
+  // ─────────────────────────────
+  // 1) 기본 필수 확인 항목
+  //    정상이어도 입력 여부가 남아야 하는 항목
+  // ─────────────────────────────
   const tV = v('temp') ? S['temp'].value + '°C' : '—';
-  const hV = v('hr') ? v('hr') + 'bpm' : '—';
+  const pV = v('hr') ? v('hr') + 'bpm' : '—';
   const rV = v('rr') ? v('rr') + '/min' : '—';
   const bV = v('bp') ? v('bp') + 'mmHg' : '—';
-  lines.push(`◎ V/S: T ${tV}, HR ${hV}, RR ${rV}, BP ${bV}`);
 
-  if(v('mentation')) lines.push('  Mentation: '+v('mentation'));
-  if(v('posture')) lines.push('  자세/보행: '+v('posture'));
-  if(v('aggression')) lines.push('  공격성: '+v('aggression'));
+  lines.push('■ 기본 확인');
+  lines.push(`V/S: T ${tV} | P ${pV} | R ${rV} | BP ${bV}`);
 
-  const mmC = v('mm_color') || '핑크';
-  const mmM = v('mm_moist') || '촉촉';
-  const crtV = v('crt') || '1-2sec';
-  lines.push(`◎ MM/CRT: 점막색(${mmC}), 습도(${mmM}), CRT(${crtV})`);
+  const basicLines=[];
 
-  const cvParts=[];
-  if(v('heart_rhythm')) cvParts.push('리듬 '+v('heart_rhythm'));
-  if(v('murmur')==='있음') {
-      cvParts.push('심잡음+'+(S['murmur']?.grade?' G'+S['murmur'].grade:''));
-  } else if(v('murmur')==='없음') {
-      cvParts.push('심잡음 없음');
+  if(v('mentation')) {
+    basicLines.push('Mentation: '+v('mentation'));
   }
-  if(cvParts.length) lines.push('◎ CV: '+cvParts.join(', '));
+
+  const ausParts=[];
+  if(v('heart_rhythm')) {
+    ausParts.push('Heart rhythm '+v('heart_rhythm'));
+  }
+
+  if(v('murmur')==='있음') {
+    ausParts.push('Murmur 있음'+(S['murmur']?.grade ? ' G'+S['murmur'].grade : ''));
+  } else if(v('murmur')==='없음') {
+    ausParts.push('Murmur 없음');
+  }
+
+  if(vf('lungs')) {
+    ausParts.push('Lung '+vf('lungs')+(m('lungs') ? ' ('+m('lungs')+')' : ''));
+  }
+
+  if(ausParts.length) {
+    basicLines.push('Auscultation: '+ausParts.join(' | '));
+  }
+
+  const mmParts=[];
+  if(v('mm_color')) mmParts.push('MM color '+v('mm_color'));
+  if(v('mm_moist')) mmParts.push('MM moisture '+v('mm_moist'));
+  if(v('crt')) mmParts.push('CRT '+v('crt'));
+
+  if(mmParts.length) {
+    basicLines.push('MM/CRT: '+mmParts.join(' | '));
+  }
 
   const bodyParts=[];
+  if(v('hydration')) bodyParts.push('Hydration '+v('hydration'));
   if(v('bcs')) bodyParts.push('BCS '+v('bcs')+'/9');
   if(v('mcs')) bodyParts.push('MCS '+v('mcs'));
-  if(v('hydration')) bodyParts.push('탈수 '+v('hydration'));
-  if(bodyParts.length) lines.push('◎ 체형/수화: '+bodyParts.join(', '));
 
-  if(v('resp_effort')) lines.push('◎ 호흡노력: '+v('resp_effort'));
-  
-  if(vf('lungs')){
-    lines.push('◎ 폐 청진: '+vf('lungs')+(m('lungs')?' ('+m('lungs')+')':''));
+  if(bodyParts.length) {
+    basicLines.push('Body: '+bodyParts.join(' | '));
   }
 
-  const headLines=[];
-  if(vf('eyes')) headLines.push('눈('+vf('eyes')+')');
-  if(vf('ears')) headLines.push('귀('+vf('ears')+')');
-  if(vf('nose')) headLines.push('코('+vf('nose')+')');
-  if(vf('oral')) headLines.push('구강('+vf('oral')+')');
-  if(headLines.length) lines.push('◎ 두부: ' + headLines.join(' | '));
+  basicLines.forEach(x=>lines.push(x));
 
-  if(v('neck_pain')) lines.push('◎ 경추통증: '+v('neck_pain'));
-  
-  const lnAbn=LN_KEYS.map((k,i)=>{
-    const val=v(k); if(!val) return null;
+  // ─────────────────────────────
+  // 2) 특이/이상 소견
+  //    정상 생략 대상도 이상이면 반드시 출력
+  // ─────────────────────────────
+  const abnLines=[];
+
+  // 전반적 평가
+  if(isAbnKey('posture')) abnLines.push('자세/보행: '+v('posture'));
+  if(isAbnKey('aggression')) abnLines.push('공격성: '+v('aggression'));
+
+  // V/S 이상
+  if(isAbnKey('temp')) abnLines.push('체온: '+tV);
+  if(isAbnKey('hr')) abnLines.push('맥박/심박수: '+pV);
+  if(isAbnKey('rr')) abnLines.push('호흡수: '+rV);
+  if(isAbnKey('bp')) abnLines.push('혈압: '+bV);
+
+  // Mentation 이상
+  if(isAbnKey('mentation')) abnLines.push('Mentation: '+v('mentation'));
+
+  // 심장/폐 청진 이상
+  if(isAbnKey('heart_rhythm')) abnLines.push('심박 리듬: '+v('heart_rhythm'));
+  if(v('murmur')==='있음') {
+    abnLines.push('심잡음: 있음'+(S['murmur']?.grade ? ' G'+S['murmur'].grade : ''));
+  }
+  if(isAbnKey('lungs')) {
+    abnLines.push('폐 청진: '+vf('lungs')+(m('lungs') ? ' ('+m('lungs')+')' : ''));
+  }
+
+  // MM/CRT 이상
+  if(isAbnKey('mm_color')) abnLines.push('점막색: '+v('mm_color'));
+  if(isAbnKey('mm_moist')) abnLines.push('점막 건조도: '+v('mm_moist'));
+  if(isAbnKey('crt')) abnLines.push('CRT: '+v('crt'));
+
+  // 체형/수화 이상
+  if(isAbnKey('hydration')) abnLines.push('탈수평가: '+v('hydration'));
+  if(isAbnKey('bcs')) abnLines.push('BCS: '+v('bcs')+'/9');
+  if(isAbnKey('mcs')) abnLines.push('MCS: '+v('mcs'));
+
+  // 호흡노력
+  if(isAbnKey('resp_effort')) {
+    abnLines.push('호흡노력: '+v('resp_effort'));
+  }
+
+  // 두부
+  if(isAbnKey('eyes')) {
+    abnLines.push('눈: '+vf('eyes')+(m('eyes') ? ' ('+m('eyes')+')' : ''));
+  }
+  if(isAbnKey('ears')) {
+    abnLines.push('귀: '+vf('ears')+(m('ears') ? ' ('+m('ears')+')' : ''));
+  }
+  if(isAbnKey('nose')) {
+    abnLines.push('코: '+vf('nose'));
+  }
+  if(isAbnKey('oral')) {
+    abnLines.push('구강: '+vf('oral')+(m('oral') ? ' ('+m('oral')+')' : ''));
+  }
+
+  // 목
+  if(isAbnKey('neck_pain')) {
+    abnLines.push('경추통증: '+v('neck_pain'));
+  }
+  if(isAbnKey('neck_rom')) {
+    abnLines.push('경추 ROM: '+v('neck_rom'));
+  }
+
+  // 림프절
+  const lnAbn = LN_KEYS.map((k,i)=>{
+    const val=v(k);
+    if(!val || !isAbnKey(k)) return null;
     return LN_SHORT[i]+'('+val+')';
   }).filter(Boolean);
-  if(lnAbn.length) lines.push('◎ 림프절: '+lnAbn.join(', '));
 
-  const abdParts=[];
-  if(v('abd_tension')) abdParts.push('복압/팽만 '+v('abd_tension'));
-  if(v('abd_pain')) abdParts.push('복통 '+v('abd_pain'));
-  const abdF=vf('abd_findings');
-  if(abdF) abdParts.push('촉진 소견('+abdF+(m('abd_findings')?' ('+m('abd_findings')+')':'')+')');
-  if(abdParts.length) lines.push('◎ 복부: '+abdParts.join(', '));
-
-  const skinParts=[];
-  if(vf('haircoat')) skinParts.push('피모('+vf('haircoat')+')');
-  if(vf('skin')) skinParts.push('피부 병변('+vf('skin')+(m('skin')?' ('+m('skin')+')':'')+')');
-  if(skinParts.length) lines.push('◎ 피부/피모: '+skinParts.join(', '));
-
-  if(v('masses_yn')==='있음') {
-      lines.push('◎ 종괴: '+(m('masses_detail')||'상세내용 없음'));
-  } else if (v('masses_yn')==='없음') {
-      lines.push('◎ 종괴: 없음');
+  if(lnAbn.length) {
+    abnLines.push('림프절: '+lnAbn.join(', '));
   }
 
-  if(vf('repro')) lines.push('◎ 생식기: '+vf('repro')+(m('repro')?' ('+m('repro')+')':''));
+  // 복부
+  const abdParts=[];
+  if(isAbnKey('abd_tension')) {
+    abdParts.push('복압/팽만 '+v('abd_tension'));
+  }
+  if(isAbnKey('abd_pain')) {
+    abdParts.push('복통 '+v('abd_pain'));
+  }
+  if(isAbnKey('abd_findings')) {
+    abdParts.push('촉진 '+vf('abd_findings')+(m('abd_findings') ? ' ('+m('abd_findings')+')' : ''));
+  }
+
+  if(abdParts.length) {
+    abnLines.push('복부: '+abdParts.join(' | '));
+  }
+
+  // 피부/피모
+  // 피모는 정상이면 생략, 이상이면 표시
+  const skinParts=[];
+  if(isAbnKey('haircoat')) {
+    skinParts.push('피모 '+vf('haircoat'));
+  }
+  if(isAbnKey('skin')) {
+    skinParts.push('피부 '+vf('skin')+(m('skin') ? ' ('+m('skin')+')' : ''));
+  }
+
+  if(skinParts.length) {
+    abnLines.push('피부/피모: '+skinParts.join(' | '));
+  }
+
+  // 종괴
+  if(v('masses_yn')==='있음') {
+    abnLines.push('종괴: '+(m('masses_detail') || '상세내용 없음'));
+  }
+
+  // 생식기
+  // 정상이면 생략, 이상이면 표시
+  if(isAbnKey('repro')) {
+    abnLines.push('생식기: '+vf('repro')+(m('repro') ? ' ('+m('repro')+')' : ''));
+  }
+
+  if(abnLines.length){
+    lines.push('');
+    lines.push('■ 특이/이상 소견');
+    abnLines.forEach(x=>lines.push('- '+x));
+  }
+
+  // ─────────────────────────────
+  // 3) 정상이어도 “입력했다”는 사실만 남길 항목
+  //    단, 기본 확인에서 이미 자세히 표시한 항목은 중복 제거
+  // ─────────────────────────────
+  const checkedNormalItems=[];
+
+  const addNormal = (k, label) => {
+    if(isNormalKey(k)) checkedNormalItems.push(label);
+  };
+
+  // 이미 ■ 기본 확인에 상세 표시되는 항목은 여기서 제외:
+  // mentation, temp, hr, rr, bp, heart_rhythm, murmur, lungs,
+  // crt, mm_color, mm_moist, hydration, bcs, mcs
+
+  // 정상이어도 생략하기로 한 항목:
+  // posture, aggression, haircoat, repro
+
+  // 그 외 정상 확인을 남기고 싶은 항목만 여기에 포함
+  addNormal('resp_effort', '호흡노력');
+  addNormal('eyes', '눈');
+  addNormal('ears', '귀');
+  addNormal('nose', '코');
+  addNormal('oral', '구강');
+  addNormal('neck_pain', '경추통증');
+  addNormal('neck_rom', '경추ROM');
+
+  LN_KEYS.forEach((k,i)=>{
+    if(isNormalKey(k)) checkedNormalItems.push('LN-'+LN_SHORT[i]);
+  });
+
+  addNormal('abd_tension', '복압/팽만');
+  addNormal('abd_pain', '복통');
+  addNormal('abd_findings', '복부촉진');
+
+  if(v('masses_yn')==='없음') {
+    checkedNormalItems.push('종괴');
+  }
+
+  if(checkedNormalItems.length){
+    lines.push('');
+    lines.push('■ 정상 확인');
+    lines.push(checkedNormalItems.join(', '));
+  }
+
+  // ─────────────────────────────
+  // 4) 입력 항목 수
+  // ─────────────────────────────
+  const checkedCount = ALL_KEYS.filter(hasVal).length;
+  const totalCount = ALL_KEYS.length;
+
+  lines.push('');
+  lines.push(`입력 항목: ${checkedCount}/${totalCount}`);
 
   return lines.join('\n');
 }
