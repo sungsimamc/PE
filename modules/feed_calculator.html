@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>사료 급여량 계산기 — 성심동물의료센터 EMR</title>
+<link rel="apple-touch-icon" href="../로고_사진.png">
+<link rel="manifest" href="../manifest.json">
+<link rel="stylesheet" href="../css/common.css">
+<style>
+  .calc-card {
+    background: var(--canvas);
+    border: 1px solid var(--hairline);
+    border-radius: var(--r);
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .calc-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .calc-field {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+  .calc-field label {
+    font-size: 11px;
+    color: var(--muted);
+    font-weight: 600;
+  }
+  .calc-field input,
+  .calc-field select {
+    background: var(--canvas);
+    border: 1px solid var(--hairline);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 14px;
+    font-weight: 500;
+    padding: 8px 10px;
+    border-radius: var(--ri);
+    outline: none;
+  }
+  .calc-field input:focus,
+  .calc-field select:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px rgba(30,140,170,.12);
+  }
+  .result-box {
+    background: var(--primary-soft);
+    border: 1px solid var(--primary-mid);
+    border-radius: var(--r);
+    padding: 18px;
+    margin-top: 14px;
+  }
+  .result-main {
+    font-size: 30px;
+    font-weight: 700;
+    color: var(--primary);
+    font-family: var(--mono);
+    line-height: 1.2;
+  }
+  .result-sub {
+    margin-top: 8px;
+    font-size: 13px;
+    color: var(--body-c);
+    line-height: 1.7;
+  }
+  .warn {
+    background: var(--alert-light);
+    border: 1px solid var(--alert-mid);
+    color: var(--alert);
+    border-radius: var(--ri);
+    padding: 10px;
+    font-size: 12px;
+    line-height: 1.6;
+    margin-top: 12px;
+    display: none;
+  }
+  .small-note {
+    color: var(--muted);
+    font-size: 11px;
+    line-height: 1.6;
+    margin-top: 10px;
+  }
+  @media(max-width:580px) {
+    .calc-grid { grid-template-columns: 1fr; }
+    .result-main { font-size: 25px; }
+  }
+</style>
+</head>
+<body>
+<header class="app-header">
+  <a href="../index.html" class="hdr-left">
+    <img src="../로고_사진.png" alt="성심동물의료센터" class="hdr-logo">
+    <span class="hdr-div"></span>
+    <span class="hdr-title">사료 급여량 계산기</span>
+  </a>
+  <div class="hdr-right">
+    <span class="prog-text" id="statusText">입력 대기</span>
+  </div>
+</header>
+
+<main class="page">
+  <section class="calc-card">
+    <div class="sc-hdr" style="padding:0 0 12px 0; border-bottom:1px solid var(--hairline); margin-bottom:12px;">
+      <div class="sc-bar"></div>
+      <div>
+        <div class="sc-tt">Feeding Calculator</div>
+        <div class="sc-sub">체중 · 사료 kcal/g · 하루 급여 횟수 기반 1회 급여량 계산</div>
+      </div>
+    </div>
+
+    <div class="calc-grid">
+      <div class="calc-field">
+        <label for="bodyWeight">체중 kg</label>
+        <input id="bodyWeight" type="number" inputmode="decimal" min="0" step="0.01" placeholder="예: 4.2">
+      </div>
+
+      <div class="calc-field">
+        <label for="factor">급여 계수</label>
+        <select id="factor">
+          <option value="1">RER × 1.0</option>
+          <option value="1.2">RER × 1.2</option>
+          <option value="1.4">RER × 1.4</option>
+          <option value="1.6">RER × 1.6</option>
+          <option value="1.8" selected>RER × 1.8</option>
+          <option value="2">RER × 2.0</option>
+          <option value="2.5">RER × 2.5</option>
+          <option value="3">RER × 3.0</option>
+        </select>
+      </div>
+
+      <div class="calc-field">
+        <label for="feedSearch">사료 검색</label>
+        <input id="feedSearch" type="text" placeholder="예: i/d, renal, recovery">
+      </div>
+
+      <div class="calc-field">
+        <label for="feedSelect">사료 종류</label>
+        <select id="feedSelect"></select>
+      </div>
+
+      <div class="calc-field">
+        <label for="frequency">하루 급여 횟수</label>
+        <select id="frequency">
+          <option value="1">SID / 하루 1회</option>
+          <option value="2">BID / 하루 2회</option>
+          <option value="3" selected>TID / 하루 3회</option>
+          <option value="4">QID / 하루 4회</option>
+          <option value="5">하루 5회</option>
+          <option value="6">하루 6회</option>
+        </select>
+      </div>
+
+      <div class="calc-field">
+        <label for="roundMode">반올림 단위</label>
+        <select id="roundMode">
+          <option value="0.1">0.1 g</option>
+          <option value="1" selected>1 g</option>
+          <option value="5">5 g</option>
+          <option value="10">10 g</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="result-box">
+      <div class="result-main" id="mainResult">— g / 회</div>
+      <div class="result-sub" id="subResult">체중, 사료, 급여 횟수를 입력하면 계산됩니다.</div>
+    </div>
+
+    <div class="warn" id="warnBox"></div>
+
+    <div class="small-note">
+      RER 선형식은 <b>(30 × 체중 kg) + 70</b>을 사용합니다. 이 방식은 일반적으로 2–45 kg 범위에서 간편 추정식으로 사용하며, 실제 급여량은 BCS, MCS, 체중 변화, 질병 상태, 활동량에 따라 조정해야 합니다.
+    </div>
+
+    <div class="btn-row" style="justify-content:flex-end; margin-top:14px;">
+      <button class="btn btn-ghost" id="resetBtn">초기화</button>
+    </div>
+  </section>
+</main>
+
+<script src="../js/feed_data.js"></script>
+<script>
+const els = {
+  bodyWeight: document.getElementById('bodyWeight'),
+  factor: document.getElementById('factor'),
+  feedSearch: document.getElementById('feedSearch'),
+  feedSelect: document.getElementById('feedSelect'),
+  frequency: document.getElementById('frequency'),
+  roundMode: document.getElementById('roundMode'),
+  mainResult: document.getElementById('mainResult'),
+  subResult: document.getElementById('subResult'),
+  warnBox: document.getElementById('warnBox'),
+  statusText: document.getElementById('statusText'),
+  resetBtn: document.getElementById('resetBtn')
+};
+
+function roundTo(value, unit) {
+  const u = Number(unit);
+  if (!u || u <= 0) return value;
+  return Math.round(value / u) * u;
+}
+
+function formatNumber(value, digits = 1) {
+  if (!Number.isFinite(value)) return '—';
+  const fixed = value.toFixed(digits);
+  return fixed.replace(/\.0$/, '');
+}
+
+function getRER(weightKg) {
+  return (30 * weightKg) + 70;
+}
+
+function getFilteredFeeds() {
+  const q = els.feedSearch.value.trim().toLowerCase();
+  if (!q) return FEED_LIST;
+  return FEED_LIST.filter(feed => feed.name.toLowerCase().includes(q));
+}
+
+function renderFeedOptions() {
+  const selected = els.feedSelect.value;
+  const list = getFilteredFeeds();
+  els.feedSelect.innerHTML = '';
+
+  if (list.length === 0) {
+    const opt = document.createElement('option');
+    opt.value = '';
+    opt.textContent = '검색 결과 없음';
+    els.feedSelect.appendChild(opt);
+    calculate();
+    return;
+  }
+
+  list.forEach(feed => {
+    const opt = document.createElement('option');
+    opt.value = feed.name;
+    opt.textContent = `${feed.name} (${feed.kcalPerGram} kcal/g)`;
+    els.feedSelect.appendChild(opt);
+  });
+
+  if ([...els.feedSelect.options].some(option => option.value === selected)) {
+    els.feedSelect.value = selected;
+  }
+
+  calculate();
+}
+
+function getSelectedFeed() {
+  return FEED_LIST.find(feed => feed.name === els.feedSelect.value);
+}
+
+function calculate() {
+  const weight = Number(els.bodyWeight.value);
+  const factor = Number(els.factor.value);
+  const feed = getSelectedFeed();
+  const frequency = Number(els.frequency.value);
+  const roundUnit = Number(els.roundMode.value);
+
+  els.warnBox.style.display = 'none';
+  els.warnBox.textContent = '';
+
+  if (!weight || weight <= 0) {
+    els.mainResult.textContent = '— g / 회';
+    els.subResult.textContent = '체중을 입력하세요.';
+    els.statusText.textContent = '입력 대기';
+    return;
+  }
+
+  if (!feed || !frequency || frequency <= 0) {
+    els.mainResult.textContent = '— g / 회';
+    els.subResult.textContent = '사료와 급여 횟수를 확인하세요.';
+    els.statusText.textContent = '입력 대기';
+    return;
+  }
+
+  const rer = getRER(weight);
+  const dailyKcal = rer * factor;
+  const dailyGram = dailyKcal / feed.kcalPerGram;
+  const perMealRaw = dailyGram / frequency;
+  const perMealRounded = roundTo(perMealRaw, roundUnit);
+  const dailyGramRounded = perMealRounded * frequency;
+  const dailyKcalRounded = dailyGramRounded * feed.kcalPerGram;
+
+  els.mainResult.textContent = `${formatNumber(perMealRounded, roundUnit < 1 ? 1 : 0)} g / 회`;
+  els.subResult.innerHTML =
+    `하루 총량 <b>${formatNumber(dailyGramRounded, 0)} g/day</b> · ` +
+    `약 <b>${formatNumber(dailyKcalRounded, 0)} kcal/day</b><br>` +
+    `RER ${formatNumber(rer, 0)} kcal/day × ${factor} · ` +
+    `${feed.name} · ${feed.kcalPerGram} kcal/g · 하루 ${frequency}회`;
+
+  const diff = Math.abs(dailyKcalRounded - dailyKcal);
+  if (diff >= 10) {
+    els.warnBox.style.display = 'block';
+    els.warnBox.textContent = `반올림 단위 때문에 목표 열량과 약 ${formatNumber(diff, 0)} kcal/day 차이가 납니다. 필요 시 반올림 단위를 낮추세요.`;
+  }
+
+  els.statusText.textContent = '계산 완료';
+}
+
+function resetAll() {
+  els.bodyWeight.value = '';
+  els.factor.value = '1.8';
+  els.feedSearch.value = '';
+  els.frequency.value = '3';
+  els.roundMode.value = '1';
+  renderFeedOptions();
+  calculate();
+}
+
+[els.bodyWeight, els.factor, els.feedSelect, els.frequency, els.roundMode].forEach(el => {
+  el.addEventListener('input', calculate);
+});
+
+els.feedSearch.addEventListener('input', renderFeedOptions);
+els.resetBtn.addEventListener('click', resetAll);
+
+renderFeedOptions();
+</script>
+</body>
+</html>
