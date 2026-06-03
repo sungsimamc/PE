@@ -121,11 +121,11 @@
       <div class="calc-field">
         <label for="factor">급여 계수</label>
         <select id="factor">
-          <option value="1">RER × 1.0</option>
+          <option value="1" selected>RER × 1.0</option>
           <option value="1.2">RER × 1.2</option>
           <option value="1.4">RER × 1.4</option>
           <option value="1.6">RER × 1.6</option>
-          <option value="1.8" selected>RER × 1.8</option>
+          <option value="1.8">RER × 1.8</option>
           <option value="2">RER × 2.0</option>
           <option value="2.5">RER × 2.5</option>
           <option value="3">RER × 3.0</option>
@@ -153,16 +153,6 @@
           <option value="6">하루 6회</option>
         </select>
       </div>
-
-      <div class="calc-field">
-        <label for="roundMode">반올림 단위</label>
-        <select id="roundMode">
-          <option value="0.1">0.1 g</option>
-          <option value="1" selected>1 g</option>
-          <option value="5">5 g</option>
-          <option value="10">10 g</option>
-        </select>
-      </div>
     </div>
 
     <div class="result-box">
@@ -173,7 +163,7 @@
     <div class="warn" id="warnBox"></div>
 
     <div class="small-note">
-      RER 선형식은 <b>(30 × 체중 kg) + 70</b>을 사용합니다. 이 방식은 일반적으로 2–45 kg 범위에서 간편 추정식으로 사용하며, 실제 급여량은 BCS, MCS, 체중 변화, 질병 상태, 활동량에 따라 조정해야 합니다.
+      RER 선형식은 <b>(30 × 체중 kg) + 70</b>을 사용합니다. 이 방식은 일반적으로 2–45 kg 범위에서 간편 추정식으로 사용하며, 실제 급여량은 BCS, MCS, 체중 변화, 질병 상태, 활동량에 따라 조정해야 합니다. 1회 급여량은 <b>0.1 g 단위</b>로 반올림합니다.
     </div>
 
     <div class="btn-row" style="justify-content:flex-end; margin-top:14px;">
@@ -184,13 +174,14 @@
 
 <script src="../js/feed_data.js"></script>
 <script>
+const ROUND_UNIT = 0.1;
+
 const els = {
   bodyWeight: document.getElementById('bodyWeight'),
   factor: document.getElementById('factor'),
   feedSearch: document.getElementById('feedSearch'),
   feedSelect: document.getElementById('feedSelect'),
   frequency: document.getElementById('frequency'),
-  roundMode: document.getElementById('roundMode'),
   mainResult: document.getElementById('mainResult'),
   subResult: document.getElementById('subResult'),
   warnBox: document.getElementById('warnBox'),
@@ -199,9 +190,8 @@ const els = {
 };
 
 function roundTo(value, unit) {
-  const u = Number(unit);
-  if (!u || u <= 0) return value;
-  return Math.round(value / u) * u;
+  if (!unit || unit <= 0) return value;
+  return Math.round(value / unit) * unit;
 }
 
 function formatNumber(value, digits = 1) {
@@ -257,7 +247,6 @@ function calculate() {
   const factor = Number(els.factor.value);
   const feed = getSelectedFeed();
   const frequency = Number(els.frequency.value);
-  const roundUnit = Number(els.roundMode.value);
 
   els.warnBox.style.display = 'none';
   els.warnBox.textContent = '';
@@ -280,13 +269,13 @@ function calculate() {
   const dailyKcal = rer * factor;
   const dailyGram = dailyKcal / feed.kcalPerGram;
   const perMealRaw = dailyGram / frequency;
-  const perMealRounded = roundTo(perMealRaw, roundUnit);
+  const perMealRounded = roundTo(perMealRaw, ROUND_UNIT);
   const dailyGramRounded = perMealRounded * frequency;
   const dailyKcalRounded = dailyGramRounded * feed.kcalPerGram;
 
-  els.mainResult.textContent = `${formatNumber(perMealRounded, roundUnit < 1 ? 1 : 0)} g / 회`;
+  els.mainResult.textContent = `${formatNumber(perMealRounded, 1)} g / 회`;
   els.subResult.innerHTML =
-    `하루 총량 <b>${formatNumber(dailyGramRounded, 0)} g/day</b> · ` +
+    `하루 총량 <b>${formatNumber(dailyGramRounded, 1)} g/day</b> · ` +
     `약 <b>${formatNumber(dailyKcalRounded, 0)} kcal/day</b><br>` +
     `RER ${formatNumber(rer, 0)} kcal/day × ${factor} · ` +
     `${feed.name} · ${feed.kcalPerGram} kcal/g · 하루 ${frequency}회`;
@@ -294,7 +283,7 @@ function calculate() {
   const diff = Math.abs(dailyKcalRounded - dailyKcal);
   if (diff >= 10) {
     els.warnBox.style.display = 'block';
-    els.warnBox.textContent = `반올림 단위 때문에 목표 열량과 약 ${formatNumber(diff, 0)} kcal/day 차이가 납니다. 필요 시 반올림 단위를 낮추세요.`;
+    els.warnBox.textContent = `반올림 때문에 목표 열량과 약 ${formatNumber(diff, 0)} kcal/day 차이가 납니다.`;
   }
 
   els.statusText.textContent = '계산 완료';
@@ -302,15 +291,14 @@ function calculate() {
 
 function resetAll() {
   els.bodyWeight.value = '';
-  els.factor.value = '1.8';
+  els.factor.value = '1';
   els.feedSearch.value = '';
   els.frequency.value = '3';
-  els.roundMode.value = '1';
   renderFeedOptions();
   calculate();
 }
 
-[els.bodyWeight, els.factor, els.feedSelect, els.frequency, els.roundMode].forEach(el => {
+[els.bodyWeight, els.factor, els.feedSelect, els.frequency].forEach(el => {
   el.addEventListener('input', calculate);
 });
 
