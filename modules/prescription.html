@@ -147,9 +147,6 @@
 
 <div class="page">
 
-  <!-- ════════════════════════════════════════════
-       [NEW] 기존 처방 불러오기 섹션
-       ════════════════════════════════════════════ -->
   <div class="sc sc-collapsible" id="importSection">
     <div class="sc-hdr">
       <button class="sc-hdr-btn" onclick="toggleImportSection()" aria-expanded="false" aria-controls="importBody">
@@ -191,18 +188,14 @@ PO for 5 days"></textarea>
         <button class="btn btn-p" style="flex: 1;" onclick="parseAndImport()">약물 추출 후 목록에 추가</button>
       </div>
 
-      <!-- 파싱 성공 결과 -->
       <div id="importResult" class="import-result">
         <div class="import-result-title" id="importResultTitle"></div>
         <div id="importDrugList"></div>
       </div>
 
-      <!-- 파싱 오류 -->
       <div id="importError" class="import-error"></div>
     </div>
   </div>
-  <!-- ════════════════════════════════════════════ -->
-
   <div class="pt-bar">
     <span class="pt-label">기본 정보</span>
     <div class="pt-field">
@@ -263,7 +256,6 @@ PO for 5 days"></textarea>
         </div>
       </div>
 
-      <!-- 정품/가품 선택 (grades 있는 약물 선택 시 자동 표시) -->
       <div class="grade-wrap" id="gradeWrap">
         <div class="grade-label" id="gradeLabel">정품 / 가품 선택</div>
         <div class="grade-btns" id="gradeBtns"></div>
@@ -286,7 +278,13 @@ PO for 5 days"></textarea>
       </div>
 
       <div style="margin-top:10px; border-top:1px solid var(--hairline); padding-top:14px;">
-        <div style="font-size:11px; font-weight:600; color:var(--muted); margin-bottom:6px;">출력 텍스트 (EMR/Slack용)</div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+          <div style="font-size:11px; font-weight:600; color:var(--muted);">출력 텍스트 (EMR/Slack용)</div>
+          <label style="font-size:11px; font-weight:600; color:#1D9E75; display:flex; align-items:center; gap:4px; cursor:pointer;">
+            <input type="checkbox" id="chkGeneric" onchange="render()" style="margin:0;">
+            동일약 처방 가능
+          </label>
+        </div>
         <textarea id="outputText" class="mi" style="height:120px; font-family:var(--mono);" readonly></textarea>
       </div>
     </div>
@@ -328,7 +326,8 @@ function parsePrescriptionText(rawText) {
     /^\[처방전\]/,
     /^Rx\)/i,
     /^\d+(\.\d+)?kg$/,
-    /\/\s*[\d.]+\s*kg/i
+    /\/\s*[\d.]+\s*kg/i,
+    /^\[동일약/ // 파싱할 때 이 문구는 무시하도록 추가
   ];
 
   const normalRegex = /^(.+?)\s+([\d.]+)(mg|ug)\/kg\s+(BID|SID|TID)(?:\s+(오전|오후|저녁))?\s+[\d.]+T\/([\d.]+)(mg|ug)(?:\([\d.]+\))?$/i;
@@ -440,6 +439,11 @@ function parseAndImport() {
 
   drugListEl.innerHTML = previewHtml;
   resultBox.classList.add('show');
+
+  // 파싱할 때 동일약 처방 가능 문구가 있었다면 체크박스 체크해주기
+  if (raw.includes('[동일약 처방 문의 전화시 동일약 처방 가능]')) {
+    document.getElementById('chkGeneric').checked = true;
+  }
 
   render();
 }
@@ -649,6 +653,7 @@ function removeDrug(index) {
 function clearAll() {
   if (confirm("모든 처방 목록을 초기화하시겠습니까?")) {
     prescribedDrugs = [];
+    document.getElementById('chkGeneric').checked = false; // 💡 폼 초기화 시 체크박스 초기화
     render();
   }
 }
@@ -740,6 +745,12 @@ function render() {
 
   listDiv.innerHTML = listHtml;
   textOutput += `\nPO for ${days} days`;
+
+  // 💡 추가된 부분: 체크박스 체크 시 맨 밑에 문구 추가
+  if (document.getElementById('chkGeneric').checked) {
+      textOutput += `\n[동일약 처방 문의 전화시 동일약 처방 가능]`;
+  }
+
   outputDiv.value = textOutput;
   document.getElementById('botStat').textContent = '계산 완료';
 }
